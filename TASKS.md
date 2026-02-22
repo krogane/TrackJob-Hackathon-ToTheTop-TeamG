@@ -13,12 +13,14 @@
 - **ブランチ命名規則**: `feature/A-1-project-setup`（担当記号-タスク番号-概要）
 - **未決事項が生じた場合**: 仮実装で進め、コード内に `// TODO: 確認が必要` コメントを残す。実装を止めない
 - **他担当のコードを変更する場合**: 変更内容と理由をコメントに明記する
+- **開発環境はDockerを使用する**: アプリの起動・コマンド実行は原則 `docker compose` 経由で行う。ホストに Node.js / Bun を直接インストールして動かさない。環境差異によるトラブルを防ぐため、「自分のホストでは動く」状態を完了条件とみなさない。`docker compose up` で起動した状態での動作を完了条件とする
+- **パッケージ追加はコンテナ内で行う**: `docker compose exec <service> pnpm add <pkg>` のようにコンテナ内で実行し、`pnpm-lock.yaml` / `bun.lockb` の変更をコミットに含める
 
 ---
 
 ## 担当A — フロントエンド専任
 
-> `AGENT.md` の「7. フロントエンド実装方針」を重点的に読んでから着手してください。
+> `AGENT.md` の「5. Docker構成」と「8. フロントエンド実装方針」を重点的に読んでから着手してください。
 
 ### 前提・制約
 
@@ -39,10 +41,12 @@
 - `apps/web/lib/api.ts` にバックエンドAPIへのリクエスト共通関数を実装する（Supabaseセッションから JWT を取得してヘッダーに付与する処理を含む）
 - `apps/web/lib/supabase.ts` に Supabase クライアントを初期化する
 - `apps/web/lib/mocks/` ディレクトリを作成し、各ページ用のダミーデータファイルを用意する
+- 担当Bがタスク B-0 で用意した `apps/web/Dockerfile` と `docker-compose.yml` を使って起動確認する
 
 **完了条件**
-- `pnpm dev --filter web` でローカル起動できる
+- `docker compose up` でコンテナが起動できる
 - `http://localhost:3000` にアクセスすると `/dashboard` にリダイレクトされる（認証チェックはダミーで可）
+- Hot Reload が有効になっており、ソースを編集するとブラウザに即時反映される
 
 ---
 
@@ -277,7 +281,7 @@
 
 ## 担当B — バックエンド専任
 
-> `AGENT.md` の「8. バックエンド実装方針」と `API.md` の全エンドポイントを重点的に読んでから着手してください。
+> `AGENT.md` の「5. Docker構成」と「9. バックエンド実装方針」と `API.md` の全エンドポイントを重点的に読んでから着手してください。
 
 ### 前提・制約
 
@@ -285,10 +289,36 @@
 - ルートハンドラは薄く保つ（バリデーション → サービス呼び出し → レスポンス返却のみ）。ビジネスロジックは `services/` に実装する
 - 認証ミドルウェア（タスク B-3）が完成するまでは、認証チェックをスキップした状態で各APIを先行実装してよい。ただし `userId` をハードコードせず、後から差し替えやすい構造にする
 - Zodスキーマはリクエストボディ・クエリパラメータ・レスポンスの3種類すべて定義する
+- **アプリの起動・コマンド実行はすべて `docker compose` 経由で行う**（ホストに Bun を直接インストールしない）
 
 ---
 
 ### タスク一覧
+
+#### B-0 Docker環境構築（最優先・担当Aの作業開始前に完了させる）
+**作業内容**
+- `AGENT.md` の「5. Docker構成」に記載された内容をそのまま実装する
+- 作成するファイルは以下の4点
+  - `apps/web/Dockerfile`
+  - `apps/api/Dockerfile`
+  - `docker-compose.yml`（ルート）
+  - `.dockerignore`（ルートおよび各 `apps/` 配下）
+- `.gitignore` に以下を追加する
+  - `docker-compose.override.yml`
+  - `apps/web/.env.local`
+  - `apps/api/.env`
+- 環境変数のテンプレートファイルを作成する
+  - `apps/web/.env.local.example`
+  - `apps/api/.env.example`
+  - 各ファイルに必要なキー名だけを記載し、値は空にしておく（`AGENT.md` の「4. 環境変数」を参照）
+- `docker compose up --build` を実行してエラーなく起動することを確認する
+
+**完了条件**
+- `docker compose up --build` でフロントエンド（port 3000）・バックエンド（port 8787）が両方起動する
+- `GET http://localhost:8787/health` が `200 {"status":"ok"}` を返す（B-1 のヘルスチェック実装後）
+- ホスト側でソースファイルを編集すると、コンテナ内に即時反映されることを確認する（Hot Reload）
+- `.env.local` / `.env` が git に含まれていないことを確認する
+- 担当AとCに Docker 環境の起動手順を共有する
 
 #### B-1 Honoセットアップ
 **作業内容**
@@ -302,9 +332,9 @@
 - `apps/api/.env` に必要な環境変数を `.env.example` として定義する
 
 **完了条件**
-- `pnpm dev --filter api` でローカル起動できる
-- `GET http://localhost:8787/health` が `200` を返す
+- `docker compose up` でコンテナが起動した状態で `GET http://localhost:8787/health` が `200` を返す
 - 存在しないパスへのアクセスが `404` を返す
+- ホスト側でソースファイルを編集すると、コンテナを再起動せずに変更が反映される
 
 ---
 
@@ -313,13 +343,18 @@
 - `apps/api/src/db/schema.ts` に `AGENT.md` の「5. データベース設計」で定義した全テーブルを Drizzle ORM のスキーマとして定義する
   - `users`・`transactions`・`budgets`・`life_goals`・`assumptions`・`advice_logs`・`external_connections`
 - `apps/api/drizzle.config.ts` を設定する
-- `pnpm db:generate` でマイグレーションファイルを生成する
-- `pnpm db:migrate` で Supabase に適用する
-- `apps/api/src/db/client.ts` に Drizzle クライアントを初期化する
+- 以下のコマンドをコンテナ内で実行してマイグレーションファイルを生成・適用する
+  ```bash
+  # マイグレーションファイルの生成
+  docker compose exec api bun run db:generate
+
+  # Supabase への適用
+  docker compose exec api bun run db:migrate
+  ```
 - インデックスを定義する（`transactions`: `user_id + transacted_at` の複合インデックス / `budgets`: `user_id + year_month` の複合インデックス）
 
 **完了条件**
-- マイグレーションが Supabase に正常に適用される
+- `docker compose exec api bun run db:migrate` がエラーなく完了する
 - Supabase Studio でテーブルが確認できる
 
 ---
@@ -474,6 +509,10 @@
 **作業内容**
 - 主要エンドポイントの統合テストを作成する（Hono の `app.request()` を使用）
   - 正常系・バリデーションエラー・認証エラー・他ユーザーのリソースへのアクセスの4パターン
+- テストの実行はコンテナ内で行う
+  ```bash
+  docker compose exec api bun test
+  ```
 - 入力値サニタイズの確認（SQLインジェクション・XSSが通らないことを確認）
 - レートリミットミドルウェアを追加する（`/api/` 全体に100リクエスト/分）
 
@@ -483,7 +522,7 @@
 
 ## 担当C — AI・外部連携専任
 
-> `AGENT.md` の「9. AI機能実装方針」と「10. 外部連携実装方針」を重点的に読んでから着手してください。
+> `AGENT.md` の「5. Docker構成」・「10. AI機能実装方針」・「11. 外部連携実装方針」を重点的に読んでから着手してください。
 
 ### 前提・制約
 
@@ -506,7 +545,7 @@
   - `advice.ts`: `AdviceContent`・`AdviceItem`・`AdviceLog` 型
   - `simulation.ts`: `YearlyProjection`・`GoalProbability`・`SimulationResult` 型
   - `index.ts`: 全型のre-export
-- `AGENT.md` の「5. データベース設計」と `API.md` のレスポンスJSONを正確に型に反映させる
+- `AGENT.md` の「6. データベース設計」と `API.md` のレスポンスJSONを正確に型に反映させる
 - 担当AとBに型定義の完了を通知し、レビューを依頼する
 
 **完了条件**
@@ -524,10 +563,14 @@
   - エラー時（API制限・タイムアウト）のリトライ処理を実装する（最大2回・指数バックオフ）
 - `apps/api/src/services/prompts/` ディレクトリを作成し、各機能のプロンプトを定数として定義するファイルを用意する
   - `ocr.ts`・`advice.ts`・`chat.ts`・`line.ts`
-- Gemini APIキーで簡単なテキスト生成が動作することをローカルで確認する
+- Gemini APIキーで簡単なテキスト生成が動作することをコンテナ内で確認する
+  ```bash
+  # 一時的なスクリプトをコンテナ内で実行して動作確認する
+  docker compose exec api bun run src/services/gemini.ts
+  ```
 
 **完了条件**
-- Gemini APIを呼び出して日本語のテキストが返ってくる
+- `docker compose exec api bun run <検証スクリプト>` でGemini APIを呼び出して日本語のテキストが返ってくる
 - `gemini.ts` のラッパー関数が正常系・エラー系ともに動作する
 
 ---
@@ -641,10 +684,16 @@
 
 | タイミング | 誰が誰に | 内容 |
 |---|---|---|
+| B-0 完了時 | BからA・C全員へ | Docker環境が起動できる状態になった。`.env.example` を参照して各自の `.env` を用意するよう共有する |
 | C-1 完了時 | CからA・B全員へ | 共通型定義の完了通知・レビュー依頼 |
-| B-1 完了時 | BからC | HonoサーバーのURLとヘルスチェックの確認 |
+| B-1 完了時 | BからC | `docker compose up` でHonoサーバーが起動した。`GET http://localhost:8787/health` で疎通確認できる |
 | B-3 完了時 | BからA | 認証ミドルウェア完了。APIクライアント（`lib/api.ts`）にJWT付与の実装を依頼 |
 | B-5 完了時 | BからA | `GET /api/transactions` が使えるようになった。タスク A-14 に着手可能 |
 | C-3 完了時 | CからA | OCR APIが使えるようになった。支出追加モーダルの画像 → OCR → フォーム自動補完を結合 |
 | C-5 完了時 | CからA | チャットAPIが使えるようになった。タスク A-20 に着手可能 |
 | C-6 完了時 | CからA | LINE Webhookが完成。タスク A-19 のLINE連携設定UIと結合 |
+
+### Dockerに関するトラブル発生時
+
+コンテナ起動・動作に問題が生じた場合は担当Bに報告する。担当Bが一次対応する。
+よくある原因と対処は `AGENT.md` の「5. Docker構成 — トラブルシューティング」を参照すること。
