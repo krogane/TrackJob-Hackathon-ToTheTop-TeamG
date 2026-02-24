@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { env } from '../lib/env'
 import { AppError } from '../lib/errors'
 
-const GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_MODEL = 'gemini-2.5-flash-lite'
 const MAX_RETRIES = 2
 const BASE_RETRY_DELAY_MS = 400
 
