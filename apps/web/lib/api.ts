@@ -119,7 +119,7 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
 }
 
 export const authProfileApi = {
-  create: (body: { display_name: string; monthly_income: number }) =>
+  create: (body: { display_name: string; monthly_income?: number }) =>
     apiRequest<UserProfile>('/api/auth/profile', {
       method: 'POST',
       body: JSON.stringify(body),

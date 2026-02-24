@@ -4,7 +4,7 @@ import { isoDatetimeSchema, uuidSchema } from './common'
 
 export const createProfileBodySchema = z.object({
   display_name: z.string().min(1).max(50),
-  monthly_income: z.number().int().min(1),
+  monthly_income: z.number().int().min(0).optional().default(0),
 })
 
 export const updateProfileBodySchema = z
