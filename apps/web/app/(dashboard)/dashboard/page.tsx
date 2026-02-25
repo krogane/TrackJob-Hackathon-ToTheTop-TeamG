@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import type { TransactionCategory } from '@lifebalance/shared/types'
 
 import { TrendChart } from '@/components/charts/TrendChart'
 import { AddExpenseModal } from '@/components/modals/AddExpenseModal'
@@ -20,6 +21,21 @@ const tabs = [
   { value: '3m', label: '3ヶ月' },
   { value: '1y', label: '1年' },
 ]
+
+const CATEGORY_LABELS: Record<TransactionCategory, string> = {
+  housing: '住居費',
+  food: '食費',
+  transport: '交通費',
+  entertainment: '娯楽',
+  clothing: '衣類',
+  communication: '通信',
+  medical: '医療',
+  social: '交際費',
+  other: 'その他',
+  salary: '給与',
+  bonus: '賞与',
+  side_income: '副収入',
+}
 
 type RangeKey = '1m' | '3m' | '1y'
 
@@ -158,7 +174,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/expense" className="block sm:col-span-2 lg:col-span-2">
-          <Card className="min-h-[220px] cursor-pointer transition-transform hover:-translate-y-[1px]">
+          <Card className="min-h-[220px] cursor-pointer bg-white transition-transform hover:-translate-y-[1px]">
             <CardContent className="h-full">
               <div className="flex h-full flex-col justify-between gap-5 sm:flex-row sm:items-center">
                 <div className="flex-1 space-y-2">
@@ -193,7 +209,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Card className="min-h-[100px] sm:col-span-1 lg:col-span-1">
+        <Card className="min-h-[100px] bg-white sm:col-span-1 lg:col-span-1">
           <CardHeader className="mb-2">
             <CardTitle className="text-[#2fbf8f]">連続記録日数</CardTitle>
           </CardHeader>
@@ -203,7 +219,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="min-h-[100px] sm:col-span-1 lg:col-span-1">
+        <Card className="min-h-[100px] bg-white sm:col-span-1 lg:col-span-1">
           <CardHeader className="mb-2">
             <CardTitle className="text-[#2fbf8f]">連続予算達成</CardTitle>
           </CardHeader>
@@ -214,7 +230,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card className="min-h-[232px]">
+      <Card className="min-h-[232px] bg-white">
         <CardHeader>
           <CardTitle className="text-[#2fbf8f]">KakeAIからの提案</CardTitle>
           <Link
@@ -245,7 +261,7 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
-        <Card>
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle className="text-[#2fbf8f]">支出トレンド</CardTitle>
             <Tabs
@@ -266,7 +282,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle className="text-[#2fbf8f]">最近の収支記録</CardTitle>
           </CardHeader>
@@ -278,7 +294,9 @@ export default function DashboardPage() {
               </div>
             ) : null}
             {recentTransactions.map((transaction) => {
-              const signedAmount = transaction.type === 'expense' ? -Math.abs(transaction.amount) : transaction.amount
+              const rawAmount = Number(transaction.amount)
+              const amount = Number.isFinite(rawAmount) ? rawAmount : 0
+              const signedAmount = transaction.type === 'expense' ? -Math.abs(amount) : amount
               return (
                 <Link
                   key={transaction.id}
@@ -287,11 +305,13 @@ export default function DashboardPage() {
                 >
                   <div>
                     <p className="font-medium text-text">{transaction.description || '（メモなし）'}</p>
-                    <p className="text-xs text-text2">{transaction.transacted_at}</p>
+                    <p className="text-xs text-text2">
+                      {transaction.transacted_at} ・ {CATEGORY_LABELS[transaction.category] ?? transaction.category}
+                    </p>
                   </div>
-                  <p className={signedAmount < 0 ? 'text-danger' : 'text-success'}>
-                    {signedAmount > 0 ? '+' : ''}
-                    {formatCurrency(signedAmount)}
+                  <p className={signedAmount < 0 ? 'text-[#e96b7f]' : 'text-[#24b47e]'}>
+                    {signedAmount < 0 ? '-' : '+'}
+                    {formatCurrency(Math.abs(signedAmount))}
                   </p>
                 </Link>
               )
@@ -300,7 +320,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="bg-white">
         <CardHeader>
           <CardTitle className="text-[#2fbf8f]">ライフプランの進捗</CardTitle>
         </CardHeader>

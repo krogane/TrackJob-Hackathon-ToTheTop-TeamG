@@ -16,7 +16,7 @@ const navItems = [
 ] as const
 
 const activeNavItemClass =
-  'bg-[#e7f8f0] font-semibold text-[#1f8f69] shadow-[0_8px_18px_rgba(31,143,105,0.1)] before:absolute before:inset-y-[20%] before:left-0 before:w-[3px] before:rounded-r before:bg-[#1f8f69]'
+  'bg-[#ffffff] font-semibold text-[#1f8f69] shadow-[0_10px_22px_rgba(31,143,105,0.2)] before:absolute before:inset-y-[20%] before:left-0 before:w-[3px] before:rounded-r before:bg-[#ffffff]'
 
 const inactiveNavItemClass = 'hover:bg-[#eef9f3] hover:text-text'
 
@@ -32,7 +32,7 @@ export function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-bg2 px-3 py-6 shadow-[8px_0_24px_rgba(40,56,90,0.06)] transition-transform md:translate-x-0',
+        'fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white px-3 py-6 shadow-[8px_0_24px_rgba(40,56,90,0.06)] transition-transform md:translate-x-0',
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
       )}
     >
