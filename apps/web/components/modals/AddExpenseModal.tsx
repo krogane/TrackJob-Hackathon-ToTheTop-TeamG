@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from '@lifebalance/shared/types'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
@@ -62,11 +62,11 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
   ] as const
 
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
     reset,
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -100,8 +100,6 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
     })
     onOpenChange(false)
   }
-
-  const selectedCategory = watch('category')
 
   useEffect(() => {
     if (open) return
@@ -160,15 +158,15 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] bg-white">
         <DialogHeader>
           <DialogTitle>支出を追加</DialogTitle>
         </DialogHeader>
-        <DialogBody>
-          <form id="add-expense-form" className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+        <DialogBody className="max-h-[58vh] py-3">
+          <form id="add-expense-form" className="space-y-2.5" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-2 rounded-xl border border-dashed border-border bg-card2 p-3">
               <label className="text-xs text-text2" htmlFor="receipt-upload">
-                レシート画像（OCR）
+                レシート画像を読み取る
               </label>
               <Input
                 id="receipt-upload"
@@ -214,25 +212,36 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
 
             <div className="space-y-1">
               <label className="text-xs text-text2">カテゴリ</label>
-              <input type="hidden" {...register('category')} />
-              <div className="grid grid-cols-4 gap-2">
-                {categories.map((category) => (
-                  <button
-                    key={category.value}
-                    type="button"
-                    className={`rounded-lg border px-2 py-2 text-xs transition-colors ${
-                      selectedCategory === category.value
-                        ? 'border-accent bg-accent/10 text-accent'
-                        : 'border-border bg-card2 text-text2 hover:border-accent/40 hover:text-text'
-                    }`}
-                    onClick={() => setValue('category', category.value, { shouldValidate: true })}
-                    aria-label={category.label}
-                  >
-                    <span className="block text-base">{category.icon}</span>
-                    {category.label}
-                  </button>
-                ))}
-              </div>
+              <Controller
+                control={control}
+                name="category"
+                render={({ field }) => (
+                  <div className="grid grid-cols-4 gap-2">
+                    {categories.map((category) => {
+                      const isSelected = field.value === category.value
+                      return (
+                        <button
+                          key={category.value}
+                          type="button"
+                          className={`rounded-lg border px-2 py-2 text-xs transition-colors ${
+                            isSelected
+                              ? 'border-[#1f8f69] bg-[#e7f8f0] text-[#1f8f69] shadow-[0_6px_12px_rgba(31,143,105,0.2)]'
+                              : 'border-border bg-card2 text-text2 hover:border-accent/40 hover:text-text'
+                          }`}
+                          onClick={() => {
+                            field.onChange(category.value)
+                          }}
+                          aria-label={category.label}
+                          aria-pressed={isSelected}
+                        >
+                          <span className="block text-base">{category.icon}</span>
+                          {category.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              />
               {errors.category ? <p className="text-xs text-danger">{errors.category.message}</p> : null}
             </div>
 
@@ -257,7 +266,12 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={createTransaction.isPending}>
             キャンセル
           </Button>
-          <Button form="add-expense-form" type="submit" disabled={createTransaction.isPending}>
+          <Button
+            className="bg-[#2fbf8f] text-white hover:bg-[#24b47e]"
+            form="add-expense-form"
+            type="submit"
+            disabled={createTransaction.isPending}
+          >
             {createTransaction.isPending ? '保存中...' : '保存'}
           </Button>
         </DialogFooter>

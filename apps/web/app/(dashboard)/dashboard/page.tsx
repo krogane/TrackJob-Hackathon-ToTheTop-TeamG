@@ -11,7 +11,7 @@ import { Tabs } from '@/components/ui/tabs'
 import { useAdvice } from '@/hooks/useAdvice'
 import { useBudgets } from '@/hooks/useBudgets'
 import { useGoals } from '@/hooks/useGoals'
-import { useTransactionTrend, useTransactions, useTransactionSummary } from '@/hooks/useTransactions'
+import { useRecordingStreak, useTransactionTrend, useTransactions, useTransactionSummary } from '@/hooks/useTransactions'
 import { authProfileApi } from '@/lib/api'
 import { formatCurrency, getCurrentYearMonth } from '@/lib/utils'
 
@@ -23,6 +23,25 @@ const tabs = [
 
 type RangeKey = '1m' | '3m' | '1y'
 
+type TrendPoint = {
+  expense: number
+  budget?: number
+}
+
+function calculateBudgetAchievementStreak(points: TrendPoint[]) {
+  let streak = 0
+  for (const point of points) {
+    const hasBudget = typeof point.budget === 'number' && point.budget > 0
+    if (!hasBudget) break
+    if (point.expense <= point.budget) {
+      streak += 1
+      continue
+    }
+    break
+  }
+  return streak
+}
+
 export default function DashboardPage() {
   const [range, setRange] = useState<RangeKey>('1m')
   const [expenseModalOpen, setExpenseModalOpen] = useState(false)
@@ -33,6 +52,7 @@ export default function DashboardPage() {
   const { data: currentSummary } = useTransactionSummary(currentYearMonth)
   const { budgetSummary } = useBudgets(currentYearMonth)
   const { goals } = useGoals('all')
+  const { streakDays } = useRecordingStreak()
   const { transactions: recentTransactions, isLoading: transactionsLoading } = useTransactions({
     year_month: currentYearMonth,
     page: 1,
@@ -42,6 +62,7 @@ export default function DashboardPage() {
   })
   const { advice, loading: adviceLoading } = useAdvice()
   const { data: rawTrendData } = useTransactionTrend(range)
+  const { data: yearlyTrendData } = useTransactionTrend('1y')
 
   useEffect(() => {
     let mounted = true
@@ -67,9 +88,9 @@ export default function DashboardPage() {
   const overAmount = Math.max(totalExpense - totalBudget, 0)
   const ringPercent = Math.min(Math.max(expenseRate, 0), 1) * 100
   const budgetUsageTone =
-    expenseRate > 1
+    expenseRate > 0.8
       ? 'var(--danger)'
-      : expenseRate > 0.8
+      : expenseRate > 0.5
         ? '#e9a33f'
         : 'var(--accent)'
 
@@ -86,6 +107,15 @@ export default function DashboardPage() {
     return 'いい調子です。支出をコントロールできていますね。'
   }, [expenseRate, overAmount])
 
+  const todayLabel = useMemo(() => {
+    const now = new Date()
+    const weekday = ['日', '月', '火', '水', '木', '金', '土'][now.getDay()]
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}年${month}月${day}日（${weekday}）`
+  }, [])
+
   const trendData = useMemo(
     () =>
       (rawTrendData ?? []).map((point) => ({
@@ -95,6 +125,11 @@ export default function DashboardPage() {
     [rawTrendData, budgetSummary?.total_budget],
   )
 
+  const budgetAchievementStreak = useMemo(() => {
+    const points = [...(yearlyTrendData ?? [])].reverse()
+    return calculateBudgetAchievementStreak(points)
+  }, [yearlyTrendData])
+
   const previewAdviceItems = useMemo(() => {
     if (!advice) return []
     const base = advice.content.urgent.length > 0 ? advice.content.urgent : advice.content.suggestions
@@ -102,32 +137,38 @@ export default function DashboardPage() {
   }, [advice])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20 md:pb-28">
       <div className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
         <div>
           <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-[#1c3b30]">
             おかえりなさい、{displayName}さん。
           </h1>
-          <p className="text-sm text-text2">{guidanceMessage}</p>
+          <p className="text-sm text-text2">
+            <span className="mr-2">{todayLabel}</span>
+            <span>{guidanceMessage}</span>
+          </p>
         </div>
-        <Button className="bg-accent text-white hover:bg-success" onClick={() => setExpenseModalOpen(true)}>
+        <Button
+          className="h-12 bg-[#2fbf8f] px-6 text-base font-bold text-white shadow-[0_10px_20px_rgba(47,191,143,0.24)] hover:bg-[#24b47e]"
+          onClick={() => setExpenseModalOpen(true)}
+        >
           ＋ 支出を追加
         </Button>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_1.7fr]">
-        <Link href="/expense" className="block">
-          <Card className="min-h-[232px] cursor-pointer transition-transform hover:-translate-y-[1px]">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Link href="/expense" className="block sm:col-span-2 lg:col-span-2">
+          <Card className="min-h-[220px] cursor-pointer transition-transform hover:-translate-y-[1px]">
             <CardContent className="h-full">
               <div className="flex h-full flex-col justify-between gap-5 sm:flex-row sm:items-center">
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-2">
                   <div className="space-y-1">
-                    <p className="text-lg font-semibold text-accent">今月の支出</p>
+                    <p className="text-lg font-semibold text-[#2fbf8f]">今月の支出</p>
                     <p className="font-display text-[34px] font-bold tracking-[-0.02em] text-text">{formatCurrency(totalExpense)}</p>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="space-y-1">
-                    <p className="text-lg font-semibold text-accent">今月の予算</p>
+                    <p className="text-lg font-semibold text-[#2fbf8f]">今月の予算</p>
                     <p className="font-display text-[34px] font-bold tracking-[-0.02em] text-text">{formatCurrency(totalBudget)}</p>
                   </div>
                 </div>
@@ -152,37 +193,61 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Card className="min-h-[232px]">
-          <CardHeader>
-            <CardTitle>KakeAIからの提案</CardTitle>
-            <Link
-              href="/advice"
-              className="inline-flex h-9 items-center justify-center rounded-xl border border-accent/40 bg-accent/10 px-3 text-xs font-semibold text-accent transition-colors hover:bg-accent/20"
-            >
-              詳しく確認する
-            </Link>
+        <Card className="min-h-[100px] sm:col-span-1 lg:col-span-1">
+          <CardHeader className="mb-2">
+            <CardTitle className="text-[#2fbf8f]">連続記録日数</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {adviceLoading ? <p className="text-sm text-text2">アドバイスを読み込み中...</p> : null}
-            {!adviceLoading && previewAdviceItems.length === 0 ? (
-              <p className="text-sm leading-relaxed text-text2">
-                アドバイスはまだありません。支出・収入の記録が増えると、傾向に合わせて提案します。
-              </p>
-            ) : null}
-            {previewAdviceItems.map((item) => (
-              <Link key={item.title} href="/advice" className="block rounded-xl bg-card2 p-3 transition-colors hover:bg-accent/10">
-                <h3 className="text-sm font-semibold text-text">{item.title}</h3>
-                <p className="mt-1 text-xs leading-relaxed text-text2">{item.body}</p>
-              </Link>
-            ))}
+          <CardContent>
+            <p className="font-display text-6xl font-bold text-text">{streakDays}日</p>
+            <p className="mt-3 text-s text-text2">毎日の記録を継続中！</p>
+          </CardContent>
+        </Card>
+
+        <Card className="min-h-[100px] sm:col-span-1 lg:col-span-1">
+          <CardHeader className="mb-2">
+            <CardTitle className="text-[#2fbf8f]">連続予算達成</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="font-display text-6xl font-bold text-text">{budgetAchievementStreak}ヶ月</p>
+            <p className="mt-3 text-s text-text2">予算内で推移した連続月数</p>
           </CardContent>
         </Card>
       </div>
 
+      <Card className="min-h-[232px]">
+        <CardHeader>
+          <CardTitle className="text-[#2fbf8f]">KakeAIからの提案</CardTitle>
+          <Link
+            href="/advice"
+            className="inline-flex h-9 items-center justify-center rounded-xl bg-card2 px-3 text-xs font-semibold text-[#2fbf8f] transition-all hover:-translate-y-[1px] hover:bg-[#2fbf8f] hover:text-white focus-visible:bg-[#2fbf8f] focus-visible:text-white active:bg-[#2fbf8f] active:text-white"
+          >
+            詳しく確認する
+          </Link>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {adviceLoading ? <p className="text-sm text-text2">アドバイスを読み込み中...</p> : null}
+          {!adviceLoading && previewAdviceItems.length === 0 ? (
+            <p className="text-sm leading-relaxed text-text2">
+              アドバイスはまだありません。支出・収入の記録が増えると、傾向に合わせて提案します。
+            </p>
+          ) : null}
+          {previewAdviceItems.map((item) => (
+            <Link
+              key={item.title}
+              href="/advice"
+              className="block rounded-xl bg-card2 p-3 shadow-[0_8px_16px_rgba(35,55,95,0.08)] transition-all hover:-translate-y-[1px] hover:bg-accent/10"
+            >
+              <h3 className="text-sm font-semibold text-text">{item.title}</h3>
+              <p className="mt-1 text-xs leading-relaxed text-text2">{item.body}</p>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>支出トレンド</CardTitle>
+            <CardTitle className="text-[#2fbf8f]">支出トレンド</CardTitle>
             <Tabs
               options={tabs}
               value={range}
@@ -203,7 +268,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>最近の収支記録</CardTitle>
+            <CardTitle className="text-[#2fbf8f]">最近の収支記録</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {transactionsLoading ? <p className="text-sm text-text2">取引履歴を読み込み中...</p> : null}
@@ -212,25 +277,32 @@ export default function DashboardPage() {
                 記録はまだありません。
               </div>
             ) : null}
-            {recentTransactions.map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between border-b border-border py-2 text-sm last:border-none">
-                <div>
-                  <p className="font-medium text-text">{transaction.description || '（メモなし）'}</p>
-                  <p className="text-xs text-text2">{transaction.transacted_at}</p>
-                </div>
-                <p className={transaction.type === 'expense' ? 'text-danger' : 'text-success'}>
-                  {transaction.type === 'expense' ? '-' : '+'}
-                  {formatCurrency(transaction.amount)}
-                </p>
-              </div>
-            ))}
+            {recentTransactions.map((transaction) => {
+              const signedAmount = transaction.type === 'expense' ? -Math.abs(transaction.amount) : transaction.amount
+              return (
+                <Link
+                  key={transaction.id}
+                  href="/expense"
+                  className="flex items-center justify-between rounded-xl bg-card2 px-3 py-2 text-sm shadow-[0_8px_16px_rgba(35,55,95,0.08)] transition-transform hover:-translate-y-[1px]"
+                >
+                  <div>
+                    <p className="font-medium text-text">{transaction.description || '（メモなし）'}</p>
+                    <p className="text-xs text-text2">{transaction.transacted_at}</p>
+                  </div>
+                  <p className={signedAmount < 0 ? 'text-danger' : 'text-success'}>
+                    {signedAmount > 0 ? '+' : ''}
+                    {formatCurrency(signedAmount)}
+                  </p>
+                </Link>
+              )
+            })}
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>ライフプランの進捗</CardTitle>
+          <CardTitle className="text-[#2fbf8f]">ライフプランの進捗</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {goals.length === 0 ? (
@@ -239,7 +311,11 @@ export default function DashboardPage() {
             </div>
           ) : null}
           {goals.map((goal) => (
-            <Link key={goal.id} href="/future" className="block rounded-xl bg-card2 p-3 transition-colors hover:bg-accent/10">
+            <Link
+              key={goal.id}
+              href="/future"
+              className="block rounded-xl bg-card2 p-3 shadow-[0_8px_16px_rgba(35,55,95,0.08)] transition-all hover:-translate-y-[1px] hover:bg-accent/10"
+            >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-text">
                   {goal.icon} {goal.title}

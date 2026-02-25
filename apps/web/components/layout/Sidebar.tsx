@@ -15,6 +15,11 @@ const navItems = [
   { href: '/advice', label: 'KakeAI', icon: '💡' },
 ] as const
 
+const activeNavItemClass =
+  'bg-[#e7f8f0] font-semibold text-[#1f8f69] shadow-[0_8px_18px_rgba(31,143,105,0.1)] before:absolute before:inset-y-[20%] before:left-0 before:w-[3px] before:rounded-r before:bg-[#1f8f69]'
+
+const inactiveNavItemClass = 'hover:bg-[#eef9f3] hover:text-text'
+
 interface SidebarProps {
   mobileOpen?: boolean
   onNavigate?: () => void
@@ -27,7 +32,7 @@ export function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-border bg-bg2 px-3 py-6 shadow-[8px_0_24px_rgba(40,56,90,0.06)] transition-transform md:translate-x-0',
+        'fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-bg2 px-3 py-6 shadow-[8px_0_24px_rgba(40,56,90,0.06)] transition-transform md:translate-x-0',
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
       )}
     >
@@ -35,7 +40,7 @@ export function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent2 font-display text-sm font-extrabold text-white">
           K
         </div>
-        <div className="font-body text-xl font-semibold tracking-tight text-text">
+        <div className="font-body text-[30px] font-semibold leading-none tracking-tight text-text">
           Kake<span className="text-accent">AI</span>
         </div>
       </Link>
@@ -49,9 +54,7 @@ export function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
               href={item.href}
               className={cn(
                 'relative flex items-center gap-3 rounded-[10px] px-3 py-2 text-sm text-text2 transition-colors',
-                isActive &&
-                  'bg-accent/15 font-medium text-accent before:absolute before:inset-y-[20%] before:left-0 before:w-[3px] before:rounded-r before:bg-accent',
-                !isActive && 'hover:bg-accent/10 hover:text-text',
+                isActive ? activeNavItemClass : inactiveNavItemClass,
               )}
               onClick={onNavigate}
             >
@@ -62,20 +65,21 @@ export function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
         })}
       </nav>
 
-      <div className="mt-auto grid grid-cols-2 gap-2 border-t border-border px-1 pt-4">
+      <div className="mt-auto space-y-1 border-t border-border px-1 pt-4">
         <Link
           href="/settings"
           onClick={onNavigate}
           className={cn(
-            'inline-flex h-10 items-center justify-center rounded-xl border border-border bg-card text-sm font-medium text-text2 transition-colors',
-            pathname === '/settings' ? 'border-accent/50 bg-accent/10 text-accent' : 'hover:border-accent/50 hover:bg-accent/10 hover:text-text',
+            'relative flex items-center gap-3 rounded-[10px] px-3 py-2 text-sm text-text2 transition-colors',
+            pathname === '/settings' ? activeNavItemClass : inactiveNavItemClass,
           )}
         >
-          ⚙️ 設定
+          <span className="text-base">⚙️</span>
+          設定
         </Link>
         <Button
           variant="ghost"
-          className="h-10 justify-center px-2"
+          className="h-auto w-full justify-start rounded-[10px] border-none bg-transparent px-3 py-2 text-sm text-text2 shadow-none hover:bg-accent/10 hover:text-text"
           onClick={async () => {
             const supabase = getSupabaseBrowserClient()
             await supabase.auth.signOut()
@@ -83,7 +87,8 @@ export function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
             onNavigate?.()
           }}
         >
-          ↩ ログアウト
+          <span className="text-base">↩</span>
+          ログアウト
         </Button>
       </div>
     </aside>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import type * as React from 'react'
+import { createPortal } from 'react-dom'
 
 import { cn } from '@/lib/utils'
 
@@ -21,13 +22,13 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
       ref={containerRef}
       role="dialog"
       aria-modal="true"
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(24,53,43,0.28)] px-4 backdrop-blur-[3px]"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-[rgba(24,53,43,0.3)] px-4 backdrop-blur-[6px]"
       onClick={() => onOpenChange(false)}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
@@ -35,8 +36,11 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
         }
       }}
     >
-      <div onClick={(event) => event.stopPropagation()}>{children}</div>
-    </div>
+      <div className="flex w-full items-center justify-center" onClick={(event) => event.stopPropagation()}>
+        {children}
+      </div>
+    </div>,
+    document.body,
   )
 }
 
