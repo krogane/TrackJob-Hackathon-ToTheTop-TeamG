@@ -60,12 +60,29 @@ function calculateBudgetAchievementStreak(points: TrendPoint[]) {
   return streak
 }
 
+function getDashboardGreeting(now: Date) {
+  const hourInJst = Number(
+    new Intl.DateTimeFormat('ja-JP', {
+      hour: 'numeric',
+      hour12: false,
+      timeZone: 'Asia/Tokyo',
+    }).format(now),
+  )
+
+  if (hourInJst >= 5 && hourInJst <= 10) {
+    return 'おはようございます'
+  }
+
+  return 'おかえりなさい'
+}
+
 export default function DashboardPage() {
   const [range, setRange] = useState<RangeKey>('1m')
   const [expenseModalOpen, setExpenseModalOpen] = useState(false)
   const [incomeModalOpen, setIncomeModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [displayName, setDisplayName] = useState('ユーザー')
+  const [now, setNow] = useState(() => new Date())
 
   const currentYearMonth = getCurrentYearMonth()
 
@@ -102,6 +119,16 @@ export default function DashboardPage() {
     }
   }, [])
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(new Date())
+    }, 60_000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [])
+
   const totalBudget = budgetSummary?.total_budget ?? 0
   const totalExpense = currentSummary?.total_expense ?? 0
   const expenseRate = totalExpense / Math.max(1, totalBudget)
@@ -129,13 +156,14 @@ export default function DashboardPage() {
   }, [expenseRate, overAmount])
 
   const todayLabel = useMemo(() => {
-    const now = new Date()
     const weekday = ['日', '月', '火', '水', '木', '金', '土'][now.getDay()]
     const year = now.getFullYear()
     const month = String(now.getMonth() + 1).padStart(2, '0')
     const day = String(now.getDate()).padStart(2, '0')
     return `${year}年${month}月${day}日（${weekday}）`
-  }, [])
+  }, [now])
+
+  const greeting = useMemo(() => getDashboardGreeting(now), [now])
 
   const trendData = useMemo(
     () =>
@@ -162,7 +190,7 @@ export default function DashboardPage() {
       <div className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
         <div>
           <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">
-            おかえりなさい、{displayName}さん。
+            {greeting}、{displayName}さん。
           </h1>
           <p className="text-sm text-text2">
             <span className="mr-2">{todayLabel}</span>

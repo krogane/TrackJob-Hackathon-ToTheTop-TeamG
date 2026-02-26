@@ -121,7 +121,7 @@ export function AddIncomeModal({ open, onOpenChange }: AddIncomeModalProps) {
                 id="income-amount"
                 type="text"
                 inputMode="numeric"
-                placeholder="例: 250000"
+                placeholder="例: 250,000"
                 value={amountInput}
                 onChange={(event) => {
                   const formatted = formatAmountInput(event.target.value)

@@ -5,12 +5,18 @@ import type { SimulationResult } from '@lifebalance/shared/types'
 
 import { GaugeChart } from '@/components/charts/GaugeChart'
 import { ProjectionChart } from '@/components/charts/ProjectionChart'
+import { AddGoalModal } from '@/components/modals/AddGoalModal'
+import { EditGoalModal } from '@/components/modals/EditGoalModal'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Slider } from '@/components/ui/slider'
 import { useAssumptions, useUpdateAssumptions } from '@/hooks/useAssumptions'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { useDeleteGoal, useGoals } from '@/hooks/useGoals'
 import { useScenarioSimulation, useSimulation } from '@/hooks/useSimulation'
 import { simulationResult as fallbackSimulationResult } from '@/lib/mocks'
+import { formatCurrency } from '@/lib/utils'
 
 type AssumptionFormState = {
   age: number
@@ -20,6 +26,9 @@ type AssumptionFormState = {
   monthly_investment: number
   simulation_trials: 100 | 500 | 1000
 }
+
+const PRIMARY_ACTION_BUTTON_CLASS =
+  'h-12 bg-[var(--cta-bg)] px-6 text-base font-bold text-[var(--cta-text)] shadow-[var(--cta-shadow)] hover:bg-[var(--cta-hover)]'
 
 function toState(assumption: {
   age: number
@@ -52,12 +61,16 @@ function isSameAssumptionState(a: AssumptionFormState, b: AssumptionFormState) {
 
 export default function FuturePage() {
   const { assumptions, isLoading, error } = useAssumptions()
+  const { goals, isLoading: goalsLoading, error: goalsError } = useGoals('all')
   const updateAssumptions = useUpdateAssumptions()
   const runSimulation = useSimulation()
   const scenarioSimulation = useScenarioSimulation()
+  const deleteGoal = useDeleteGoal()
 
   const [assumption, setAssumption] = useState<AssumptionFormState | null>(null)
   const [simulationStatus, setSimulationStatus] = useState('')
+  const [openAddGoal, setOpenAddGoal] = useState(false)
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!assumptions) return
@@ -89,6 +102,8 @@ export default function FuturePage() {
         setSimulationStatus('前提条件またはシミュレーションの更新に失敗しました。')
       })
   }, [assumptions, debouncedAssumption, scenarioSimulation, updateAssumptions])
+
+  const editingGoal = useMemo(() => goals.find((goal) => goal.id === editingGoalId) ?? null, [editingGoalId, goals])
 
   const displayState = useMemo(
     () =>
@@ -124,10 +139,70 @@ export default function FuturePage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">ライフプラン</h1>
-        <p className="text-sm text-text2">前提条件を変更して資産推移を確認できます</p>
+      <div className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
+        <div>
+          <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">ライフプラン</h1>
+          <p className="text-sm text-text2">目標管理と将来シミュレーションをまとめて確認できます</p>
+        </div>
+        <Button className={PRIMARY_ACTION_BUTTON_CLASS} onClick={() => setOpenAddGoal(true)}>
+          ＋ 目標を追加
+        </Button>
       </div>
+
+      <Card className="bg-card">
+        <CardHeader>
+          <CardTitle className="text-accent">ライフプラン目標</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {goalsLoading ? <p className="text-sm text-text2">目標データを読み込み中...</p> : null}
+          {goalsError ? <p className="text-sm text-danger">目標データの取得に失敗しました。</p> : null}
+
+          {!goalsLoading && goals.length === 0 ? <p className="text-sm text-text2">目標がまだ登録されていません。</p> : null}
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            {goals.map((goal) => {
+              const progressPercent = Math.min(Math.max(goal.progress_rate * 100, 0), 100)
+
+              return (
+                <div key={goal.id} className="rounded-xl border border-border bg-card2 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">
+                      {goal.icon} {goal.title}
+                    </p>
+                    <Badge variant={goal.priority === '高' ? 'danger' : goal.priority === '中' ? 'warning' : 'success'}>
+                      {goal.priority}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-text2">
+                    {goal.target_year}年 / {formatCurrency(goal.saved_amount)} / {formatCurrency(goal.target_amount)}
+                  </p>
+                  <p className="mt-1 text-xs text-text2">月積立: {formatCurrency(goal.monthly_saving)}</p>
+                  <div className="mt-2 h-2 rounded-full bg-[var(--track-muted)]">
+                    <div className="h-full rounded-full bg-accent2" style={{ width: `${progressPercent}%` }} />
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setEditingGoalId(goal.id)}>
+                      編集
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={deleteGoal.isPending}
+                      onClick={() => {
+                        const ok = window.confirm('この目標を削除しますか？')
+                        if (!ok) return
+                        void deleteGoal.mutateAsync(goal.id)
+                      }}
+                    >
+                      削除
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="bg-card">
         <CardHeader>
@@ -243,6 +318,17 @@ export default function FuturePage() {
           </div>
         </CardContent>
       </Card>
+
+      <AddGoalModal open={openAddGoal} onOpenChange={setOpenAddGoal} />
+      <EditGoalModal
+        open={Boolean(editingGoal)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingGoalId(null)
+          }
+        }}
+        goal={editingGoal}
+      />
     </div>
   )
 }

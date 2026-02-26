@@ -206,7 +206,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                 id="amount"
                 type="text"
                 inputMode="numeric"
-                placeholder="例: 1200"
+                placeholder="例: 1,200"
                 value={amountInput}
                 onChange={(event) => {
                   const formatted = formatAmountInput(event.target.value)
