@@ -2,7 +2,7 @@ FROM oven/bun:1.2-alpine AS base
 
 WORKDIR /workspace
 
-COPY package.json pnpm-workspace.yaml bun.lockb* ./
+COPY package.json pnpm-workspace.yaml bun.lock* ./
 COPY apps/api/package.json apps/api/package.json
 COPY packages/shared/package.json packages/shared/package.json
 RUN bun install

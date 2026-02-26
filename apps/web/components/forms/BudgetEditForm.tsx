@@ -112,7 +112,7 @@ export function BudgetEditForm({
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="ghost"
                     className="hover:bg-[var(--cta-bg)] hover:text-white"
                     onClick={async () => {
                       if (!isEditing) {
@@ -141,7 +141,7 @@ export function BudgetEditForm({
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="ghost"
                     className="hover:bg-[var(--cta-bg)] hover:text-white"
                     onClick={() =>
                       setValues((prev) => ({
