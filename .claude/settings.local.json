@@ -1,18 +1,4 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -c 'cd \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)\" && python3 .claude/hooks/docker-sync.py'",
-            "timeout": 120000
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Bash(tail:*)",
@@ -38,7 +24,22 @@
       "Bash(docker:*)",
       "Bash(python3:*)",
       "Bash(ls:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__ide__getDiagnostics"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cd \"$(git rev-parse --show-toplevel 2>/dev/null || echo .)\" && python3 .claude/hooks/docker-sync.py'",
+            "timeout": 120000
+          }
+        ]
+      }
     ]
   }
 }

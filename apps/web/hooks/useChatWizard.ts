@@ -1,9 +1,11 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { ChatMessage, ChatWizardConfig } from '@lifebalance/shared/types'
 
 import { ApiError, authProfileApi, budgetsApi, chatApi, goalsApi } from '@/lib/api'
+import { queryKeys } from '@/lib/query-keys'
 
 const EXPENSE_CATEGORIES = [
   'housing',
@@ -380,6 +382,7 @@ function resolveFallbackTurn(state: FallbackState, input: string) {
 const FINISH_PHRASE = 'これで記録を終了します'
 
 export function useChatWizard() {
+  const queryClient = useQueryClient()
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -543,6 +546,7 @@ export function useChatWizard() {
         }
         try {
           await budgetsApi.updateBulk(budgetPayload)
+          void queryClient.invalidateQueries({ queryKey: queryKeys.budgets(budgetPayload.year_month) })
         } catch (saveError) {
           warnSkippedSave('budget', budgetPayload, saveError)
         }
@@ -556,7 +560,7 @@ export function useChatWizard() {
     }
 
     return { persisted }
-  }, [config, saving])
+  }, [config, saving, queryClient])
 
   const reset = useCallback(() => {
     setMessages(INITIAL_MESSAGES)
