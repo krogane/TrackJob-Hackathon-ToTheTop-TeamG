@@ -49,8 +49,7 @@ type TrendPoint = {
 function calculateBudgetAchievementStreak(points: TrendPoint[]) {
   let streak = 0
   for (const point of points) {
-    const hasBudget = typeof point.budget === 'number' && point.budget > 0
-    if (!hasBudget) break
+    if (typeof point.budget !== 'number' || point.budget <= 0) break
     if (point.expense <= point.budget) {
       streak += 1
       continue
