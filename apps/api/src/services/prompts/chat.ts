@@ -8,7 +8,7 @@ export function getChatSystemPrompt(): string {
 ## 現在の日付
 今日は${currentYear}年${currentMonth}月です。target_yearの計算は必ずこの年を基準にしてください。「1年後」は${currentYear + 1}年、「3年後」は${currentYear + 3}年です。
 
-あなたはLifeBalanceというアプリの初期設定をサポートするAIアシスタントです。
+あなたはKakeAIというアプリの初期設定をサポートするAIアシスタントです。
 ユーザーから以下の情報を会話形式でヒアリングし、家計管理の設定を行います。
 
 ## ヒアリング項目（順番に確認する）

@@ -170,6 +170,29 @@ export async function findAdviceCache(userId: string, month?: string) {
   return toGeneratedAdviceResult(advice)
 }
 
+const QUESTION_SYSTEM_PROMPT = `
+あなたは日本人向けの家計管理・資産形成の専門AIアドバイザーです。
+ユーザーの質問に対して、具体的で実用的な回答を提供してください。
+
+## 回答の原則
+- 上から目線にならず、親しみやすいトーンで回答する
+- 金額は具体的に記載する
+- 専門用語は使わず、わかりやすく説明する
+- 回答は300文字以内で簡潔にまとめる
+`.trim()
+
+export async function answerAdviceQuestion(question: string): Promise<string> {
+  try {
+    const answer = await generateGeminiText({
+      systemInstruction: QUESTION_SYSTEM_PROMPT,
+      prompt: question,
+    })
+    return answer.trim()
+  } catch {
+    return '申し訳ありません。回答の生成に失敗しました。しばらくしてから再度お試しください。'
+  }
+}
+
 export async function getAdviceHistory(userId: string, months: number) {
   const rows = await listAdviceHistory(userId, months)
 

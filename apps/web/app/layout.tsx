@@ -20,7 +20,7 @@ const notoSansJp = Noto_Sans_JP({
 })
 
 export const metadata: Metadata = {
-  title: 'LifeBalance',
+  title: 'KakeAI',
   description: '家計管理と将来設計ダッシュボード',
 }
 

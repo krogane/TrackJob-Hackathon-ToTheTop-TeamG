@@ -1,9 +1,13 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
+
 import { ScoreHistoryChart } from '@/components/charts/ScoreHistoryChart'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { useAdvice } from '@/hooks/useAdvice'
+import { adviceApi } from '@/lib/api'
 import type { AdviceItem } from '@lifebalance/shared/types'
 
 type DisplayAdviceItem = AdviceItem & {
@@ -135,20 +139,106 @@ function AdviceSection({ title, items }: { title: string; items: DisplayAdviceIt
   )
 }
 
+type QaMessage = { role: 'user' | 'ai'; content: string }
+
 function QuestionPanel() {
+  const [messages, setMessages] = useState<QaMessage[]>([])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, loading])
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    const question = input.trim()
+    if (!question || loading) return
+
+    setMessages((prev) => [...prev, { role: 'user', content: question }])
+    setInput('')
+    setLoading(true)
+
+    try {
+      const { answer } = await adviceApi.question(question)
+      setMessages((prev) => [...prev, { role: 'ai', content: answer }])
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'ai', content: error instanceof Error ? error.message : '回答の取得に失敗しました。' },
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <Card className="bg-card xl:self-start">
       <CardHeader>
         <CardTitle className="text-base text-accent">🤖 KakeAIに質問する</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="min-h-[180px] rounded-xl border border-border bg-bg2 p-4">
-          <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
-            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent/20 text-sm">🤖</div>
-            <p className="text-sm text-text">家計・節約・投資について何でも質問してください！</p>
-          </div>
+        <div
+          className="max-h-[360px] space-y-3 overflow-y-auto rounded-xl border border-border bg-bg2 p-3"
+          aria-live="polite"
+        >
+          {messages.length === 0 ? (
+            <div className="flex items-start gap-2">
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent/20 text-sm">🤖</div>
+              <p className="rounded-lg rounded-tl-none border border-accent/20 bg-accent/10 px-3 py-2 text-sm text-text">
+                家計・節約・投資について何でも質問してください！
+              </p>
+            </div>
+          ) : (
+            messages.map((msg, index) =>
+              msg.role === 'ai' ? (
+                <div key={index} className="flex items-start gap-2">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent/20 text-sm">🤖</div>
+                  <p className="max-w-[85%] rounded-lg rounded-tl-none border border-accent/20 bg-accent/10 px-3 py-2 text-sm text-text">
+                    {msg.content}
+                  </p>
+                </div>
+              ) : (
+                <div key={index} className="flex justify-end">
+                  <p className="max-w-[85%] rounded-lg rounded-tr-none border border-border bg-card px-3 py-2 text-sm text-text">
+                    {msg.content}
+                  </p>
+                </div>
+              ),
+            )
+          )}
+          {loading ? (
+            <div className="flex items-start gap-2">
+              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent/20 text-sm">🤖</div>
+              <div className="rounded-lg rounded-tl-none border border-accent/20 bg-accent/10 px-3 py-2">
+                <span className="inline-flex gap-1">
+                  <span className="animate-bounce text-accent" style={{ animationDelay: '0ms' }}>●</span>
+                  <span className="animate-bounce text-accent" style={{ animationDelay: '150ms' }}>●</span>
+                  <span className="animate-bounce text-accent" style={{ animationDelay: '300ms' }}>●</span>
+                </span>
+              </div>
+            </div>
+          ) : null}
+          <div ref={bottomRef} />
         </div>
-        <div className="rounded-xl border border-border bg-bg2 px-4 py-3 text-sm text-text2">質問を入力してください</div>
+        <form className="flex gap-2" onSubmit={(event) => void handleSubmit(event)}>
+          <Input
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            placeholder="質問を入力してください"
+            disabled={loading}
+            aria-label="質問入力"
+          />
+          <Button
+            type="submit"
+            className="bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-hover)]"
+            disabled={!input.trim() || loading}
+            aria-label="送信"
+          >
+            送信
+          </Button>
+        </form>
       </CardContent>
     </Card>
   )

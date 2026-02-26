@@ -322,6 +322,11 @@ export const adviceApi = {
       method: 'POST',
       body: JSON.stringify(body ?? {}),
     }),
+  question: (question: string) =>
+    apiRequest<{ answer: string }>('/api/advice/question', {
+      method: 'POST',
+      body: JSON.stringify({ question }),
+    }),
 }
 
 export const chatApi = {

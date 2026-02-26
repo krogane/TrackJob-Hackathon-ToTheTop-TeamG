@@ -60,7 +60,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-[0_10px_28px_rgba(35,55,95,0.06)]">
         <h1 className="font-display text-2xl font-bold">ログイン</h1>
-        <p className="mt-1 text-sm text-text2">LifeBalance を利用するにはログインしてください。</p>
+        <p className="mt-1 text-sm text-text2">KakeAI を利用するにはログインしてください。</p>
 
         <form onSubmit={handleLogin} className="mt-6 space-y-4">
           <div>

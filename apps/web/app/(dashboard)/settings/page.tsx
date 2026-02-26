@@ -339,13 +339,13 @@ export default function SettingsPage() {
           <p className="text-sm">月次サマリー通知</p>
           <button
             type="button"
-            className={`relative h-7 w-14 overflow-hidden rounded-full transition-colors ${notificationEnabled ? 'bg-accent' : 'bg-white/20'}`}
+            className={`relative h-7 w-14 rounded-full transition-colors ${notificationEnabled ? 'bg-accent' : 'bg-white/20'}`}
             onClick={() => setNotificationEnabled((prev) => !prev)}
             aria-label="月次サマリー通知のON/OFF"
           >
             <span
-              className={`absolute top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform ${
-                notificationEnabled ? 'translate-x-8' : 'translate-x-1'
+              className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform ${
+                notificationEnabled ? 'translate-x-7' : 'translate-x-0'
               }`}
             />
           </button>
