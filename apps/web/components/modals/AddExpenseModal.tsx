@@ -158,7 +158,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] bg-white">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] bg-card">
         <DialogHeader>
           <DialogTitle>支出を追加</DialogTitle>
         </DialogHeader>
@@ -184,7 +184,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
 
             <div className="relative py-1">
               <div className="h-px bg-border" />
-              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2 text-xs text-text2">
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-text2">
                 もしくは
               </span>
             </div>
@@ -233,7 +233,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
                           type="button"
                           className={`rounded-lg border px-2 py-2 text-xs transition-colors ${
                             isSelected
-                              ? 'border-[#1f8f69] bg-[#e7f8f0] text-[#1f8f69] shadow-[0_6px_12px_rgba(31,143,105,0.2)]'
+                              ? 'border-accent bg-accent/15 text-accent shadow-[0_6px_12px_rgba(31,143,105,0.2)]'
                               : 'border-border bg-card2 text-text2 hover:border-accent/40 hover:text-text'
                           }`}
                           onClick={() => {
@@ -267,7 +267,7 @@ export function AddExpenseModal({ open, onOpenChange }: AddExpenseModalProps) {
             キャンセル
           </Button>
           <Button
-            className="bg-[#2fbf8f] text-white hover:bg-[#24b47e]"
+            className="bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-hover)]"
             form="add-expense-form"
             type="submit"
             disabled={createTransaction.isPending}

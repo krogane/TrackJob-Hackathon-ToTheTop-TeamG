@@ -18,24 +18,24 @@ export function TrendChart({ data }: TrendChartProps) {
     <div className="h-56 w-full">
       <ResponsiveContainer>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(47,74,122,0.12)" />
-          <XAxis dataKey="label" stroke="#6b857b" fontSize={12} />
-          <YAxis stroke="#6b857b" fontSize={12} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+          <XAxis dataKey="label" stroke="var(--text2)" fontSize={12} />
+          <YAxis stroke="var(--text2)" fontSize={12} />
           <Tooltip
             contentStyle={{
-              background: '#ffffff',
-              border: '1px solid rgba(47,74,122,0.12)',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
               borderRadius: 12,
-              boxShadow: '0 10px 24px rgba(35,55,95,0.08)',
+              boxShadow: 'var(--chart-tooltip-shadow)',
             }}
           />
           <Legend />
-          <Line type="monotone" dataKey="expense" stroke="#2fbf8f" strokeWidth={2.4} dot={false} name="支出" />
+          <Line type="monotone" dataKey="expense" stroke="var(--accent)" strokeWidth={2.4} dot={false} name="支出" />
           {data.some((d) => d.budget !== undefined) && (
             <Line
               type="monotone"
               dataKey="budget"
-              stroke="#e9a33f"
+              stroke="var(--warn)"
               strokeWidth={2.2}
               strokeDasharray="7 6"
               dot={false}

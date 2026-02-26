@@ -35,9 +35,9 @@ const CATEGORY_LABELS: Record<TransactionCategory, string> = {
   side_income: '副収入',
 }
 
-const PIE_COLORS = ['#2fbf8f', '#66d9b8', '#9bead3', '#5aa4ff', '#8ac4ff', '#ffd27a', '#ffbb4a', '#e96b7f', '#f5a4b4']
+const PIE_COLORS = ['#4af0b0', '#6c8fff', '#ff7eb3', '#ffb547', '#2edd8e', '#9db6ff', '#ffd68f', '#ff96bf', '#7ff3ca']
 const HEADER_ACTION_BUTTON_CLASS =
-  'h-12 bg-[#2fbf8f] px-6 text-base font-bold text-white shadow-[0_10px_20px_rgba(47,191,143,0.24)] hover:bg-[#24b47e]'
+  'h-12 bg-[var(--cta-bg)] px-6 text-base font-bold text-[var(--cta-text)] shadow-[var(--cta-shadow)] hover:bg-[var(--cta-hover)]'
 const SECONDARY_ACTION_BUTTON_CLASS = 'h-12 px-6 text-base font-bold'
 
 function toCsvCell(value: string | number) {
@@ -193,9 +193,9 @@ export default function ExpensePage() {
         </div>
       </div>
 
-      <Card className="bg-white">
+      <Card className="bg-card">
         <CardHeader className="mb-2 flex-col items-start gap-1">
-          <CardTitle className="text-[#2fbf8f]">KakeAIによる分析</CardTitle>
+          <CardTitle className="text-accent">KakeAIによる分析</CardTitle>
           <p className="text-sm text-text2">今月の支出傾向をもとにしたモック分析です。実データ連携は次フェーズで対応します。</p>
         </CardHeader>
         <CardContent>
@@ -217,9 +217,9 @@ export default function ExpensePage() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-[1.8fr_1fr]">
-        <Card className="bg-white">
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle className="text-[#2fbf8f]">カテゴリ別支出（{month}）</CardTitle>
+            <CardTitle className="text-accent">カテゴリ別支出（{month}）</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {budgetsLoading ? <p className="text-sm text-text2">予算データを読み込み中...</p> : null}
@@ -229,13 +229,13 @@ export default function ExpensePage() {
                 className="grid grid-cols-[7.5rem_17rem_1fr] items-center gap-3 border-b border-border py-2 text-sm last:border-none md:grid-cols-[7.5rem_18rem_1fr]"
               >
                 <p className="truncate">{CATEGORY_LABELS[budget.category]}</p>
-                <div className="h-2 rounded-full bg-[rgba(47,74,122,0.12)]">
+                <div className="h-2 rounded-full bg-[var(--track-muted)]">
                   <div
                     className="h-full rounded-full"
                     style={{
                       width: `${Math.min(Math.max(budget.usage_rate * 100, 0), 100)}%`,
                       background:
-                        budget.usage_rate >= 1 ? 'var(--danger)' : budget.usage_rate >= 0.8 ? '#e9a33f' : 'var(--accent)',
+                        budget.usage_rate >= 1 ? 'var(--danger)' : budget.usage_rate >= 0.8 ? 'var(--warn)' : 'var(--accent)',
                       opacity: budget.spent_amount === 0 ? 0.3 : 1,
                     }}
                   />
@@ -251,9 +251,9 @@ export default function ExpensePage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle className="text-[#2fbf8f]">支出構成</CardTitle>
+            <CardTitle className="text-accent">支出構成</CardTitle>
           </CardHeader>
           <CardContent>
             {summaryLoading ? <p className="text-sm text-text2">集計を読み込み中...</p> : null}
@@ -281,9 +281,9 @@ export default function ExpensePage() {
         </Card>
       </div>
 
-      <Card className="bg-white">
+      <Card className="bg-card">
         <CardHeader className="mb-3 flex-col items-start gap-3">
-          <CardTitle className="text-[#2fbf8f]">収支履歴</CardTitle>
+          <CardTitle className="text-accent">収支履歴</CardTitle>
           <div className="flex flex-wrap gap-2">
             <Button className={HEADER_ACTION_BUTTON_CLASS} onClick={() => setOpenIncomeModal(true)}>
               ＋ 収入を追加

@@ -15,6 +15,63 @@
   --text: #18352b;
   --text2: #4f6f63;
   --text3: #8aa79c;
+  --warn-text: #9f6f16;
+  --track-muted: rgba(47, 74, 122, 0.12);
+  --chart-grid: rgba(47, 74, 122, 0.12);
+  --chart-tooltip-shadow: 0 10px 24px rgba(35, 55, 95, 0.08);
+  --sidebar-bg: #ffffff;
+  --sidebar-shadow: 8px 0 24px rgba(40, 56, 90, 0.06);
+  --sidebar-active-bg: #ffffff;
+  --sidebar-active-text: #1f8f69;
+  --sidebar-active-bar: #ffffff;
+  --sidebar-active-shadow: 0 10px 22px rgba(31, 143, 105, 0.2);
+  --sidebar-hover-bg: #eef9f3;
+  --overlay: rgba(24, 53, 43, 0.28);
+  --cta-bg: #2fbf8f;
+  --cta-hover: #24b47e;
+  --cta-text: #ffffff;
+  --cta-shadow: 0 10px 20px rgba(47, 191, 143, 0.24);
+  --body-grad-1: rgba(47, 191, 143, 0.1);
+  --body-grad-2: rgba(102, 217, 184, 0.09);
+  --body-grad-3: rgba(184, 243, 227, 0.11);
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #0a0e1a;
+  --bg2: #0f1524;
+  --card: #131929;
+  --card2: #1a2235;
+  --border: rgba(255, 255, 255, 0.07);
+  --accent: #4af0b0;
+  --accent2: #6c8fff;
+  --accent3: #ff7eb3;
+  --warn: #ffb547;
+  --danger: #ff5f6d;
+  --success: #2edd8e;
+  --text: #e8edf8;
+  --text2: #7a8aaa;
+  --text3: #3d4d6a;
+  --warn-text: #ffd596;
+  --track-muted: rgba(255, 255, 255, 0.11);
+  --chart-grid: rgba(255, 255, 255, 0.08);
+  --chart-tooltip-shadow: 0 10px 24px rgba(5, 8, 18, 0.45);
+  --sidebar-bg: #0f1524;
+  --sidebar-shadow: 8px 0 24px rgba(3, 6, 16, 0.45);
+  --sidebar-active-bg: rgba(74, 240, 176, 0.1);
+  --sidebar-active-text: #4af0b0;
+  --sidebar-active-bar: #4af0b0;
+  --sidebar-active-shadow: none;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+  --overlay: rgba(10, 14, 26, 0.62);
+  --cta-bg: #4af0b0;
+  --cta-hover: #3ddca0;
+  --cta-text: #0a1a12;
+  --cta-shadow: 0 10px 22px rgba(74, 240, 176, 0.24);
+  --body-grad-1: rgba(74, 240, 176, 0.12);
+  --body-grad-2: rgba(108, 143, 255, 0.1);
+  --body-grad-3: rgba(255, 126, 179, 0.09);
+  color-scheme: dark;
 }
 
 * {
@@ -25,9 +82,9 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 12% 10%, rgba(47, 191, 143, 0.1), transparent 42%),
-    radial-gradient(circle at 88% 12%, rgba(102, 217, 184, 0.09), transparent 44%),
-    radial-gradient(circle at 70% 82%, rgba(184, 243, 227, 0.11), transparent 42%),
+    radial-gradient(circle at 12% 10%, var(--body-grad-1), transparent 42%),
+    radial-gradient(circle at 88% 12%, var(--body-grad-2), transparent 44%),
+    radial-gradient(circle at 70% 82%, var(--body-grad-3), transparent 42%),
     var(--bg);
   color: var(--text);
 }

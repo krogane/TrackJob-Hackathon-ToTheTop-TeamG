@@ -13,6 +13,10 @@ import { useDeleteGoal, useGoals } from '@/hooks/useGoals'
 import { formatCurrency, getCurrentYearMonth } from '@/lib/utils'
 import { useChatWizardStore } from '@/stores/chatWizardStore'
 
+const PRIMARY_ACTION_BUTTON_CLASS =
+  'h-12 bg-[var(--cta-bg)] px-6 text-base font-bold text-[var(--cta-text)] shadow-[var(--cta-shadow)] hover:bg-[var(--cta-hover)]'
+const SECONDARY_ACTION_BUTTON_CLASS = 'h-12 px-6 text-base font-bold'
+
 export default function BudgetPage() {
   const openChatWizard = useChatWizardStore((state) => state.open)
   const yearMonth = getCurrentYearMonth()
@@ -38,21 +42,23 @@ export default function BudgetPage() {
     <div className="space-y-5">
       <div className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
         <div>
-          <h1 className="font-display text-2xl font-bold">予算・目標管理</h1>
+          <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">予算・目標管理</h1>
           <p className="text-sm text-text2">月次予算とライフプラン目標を調整できます</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => openChatWizard('budget')}>
+          <Button variant="ghost" className={SECONDARY_ACTION_BUTTON_CLASS} onClick={() => openChatWizard('budget')}>
             🤖 チャットで再設定
           </Button>
-          <Button onClick={() => setOpenAddGoal(true)}>＋ 目標を追加</Button>
+          <Button className={PRIMARY_ACTION_BUTTON_CLASS} onClick={() => setOpenAddGoal(true)}>
+            ＋ 目標を追加
+          </Button>
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle>月次予算設定</CardTitle>
+            <CardTitle className="text-accent">月次予算設定</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="mb-4 flex items-center justify-between rounded-xl border border-border bg-card2 p-4">
@@ -86,9 +92,9 @@ export default function BudgetPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle>ライフプラン目標</CardTitle>
+            <CardTitle className="text-accent">ライフプラン目標</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {goalsLoading ? <p className="text-sm text-text2">目標データを読み込み中...</p> : null}
@@ -109,7 +115,7 @@ export default function BudgetPage() {
                 <p className="mt-1 text-xs text-text2">
                   {goal.target_year}年 / {formatCurrency(goal.saved_amount)} / {formatCurrency(goal.target_amount)}
                 </p>
-                <div className="mt-2 h-2 rounded-full bg-[rgba(47,74,122,0.12)]">
+                <div className="mt-2 h-2 rounded-full bg-[var(--track-muted)]">
                   <div className="h-full rounded-full bg-accent2" style={{ width: `${goal.progress_rate * 100}%` }} />
                 </div>
                 <div className="mt-2 flex gap-2">

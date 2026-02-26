@@ -11,7 +11,7 @@ export default function AdvicePage() {
   if (loading) {
     return (
       <div className="space-y-5">
-        <h1 className="font-display text-2xl font-bold">KakeAI</h1>
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">KakeAI</h1>
         <p className="text-sm text-text2">読み込み中...</p>
       </div>
     )
@@ -20,7 +20,7 @@ export default function AdvicePage() {
   if (!advice) {
     return (
       <div className="space-y-5">
-        <h1 className="font-display text-2xl font-bold">KakeAI</h1>
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">KakeAI</h1>
         <p className="text-sm text-danger">{error ?? 'アドバイスがありません。'}</p>
         <Button onClick={() => void refresh()} disabled={refreshing}>
           {refreshing ? '更新中...' : '再取得する'}
@@ -33,17 +33,17 @@ export default function AdvicePage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">KakeAI</h1>
+          <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">KakeAI</h1>
           <p className="text-sm text-text2">緊急度と改善効果に応じた家計アクションを確認できます</p>
         </div>
-        <Button onClick={() => void refresh()} disabled={refreshing}>
+        <Button className="text-text" onClick={() => void refresh()} disabled={refreshing}>
           {refreshing ? '更新中...' : 'KakeAIを更新'}
         </Button>
       </div>
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}
 
-      <Card>
+      <Card className="bg-card">
         <CardContent className="grid gap-4 py-6 md:grid-cols-2">
           <div className="rounded-xl border border-accent/30 bg-accent/10 p-4">
             <p className="text-xs text-text2">家計スコア</p>
@@ -60,9 +60,9 @@ export default function AdvicePage() {
         <AdviceSection title="継続中の良い点" items={advice.content.positives} tone="border-accent/30 bg-accent/10" />
       </div>
 
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>来月の目標</CardTitle>
+          <CardTitle className="text-accent">来月の目標</CardTitle>
         </CardHeader>
         <CardContent>
           <ul className="list-disc space-y-2 pl-5 text-sm text-text2">
@@ -78,9 +78,9 @@ export default function AdvicePage() {
 
 function AdviceSection({ title, items, tone }: { title: string; items: Array<{ title: string; body: string }>; tone: string }) {
   return (
-    <Card>
+    <Card className="bg-card">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="text-accent">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {items.map((item) => (

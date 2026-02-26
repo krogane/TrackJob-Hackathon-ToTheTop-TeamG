@@ -201,7 +201,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="space-y-5">
-        <h1 className="font-display text-2xl font-bold">設定</h1>
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">設定</h1>
         <p className="text-sm text-text2">読み込み中...</p>
       </div>
     )
@@ -210,13 +210,13 @@ export default function SettingsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-display text-2xl font-bold">設定</h1>
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">設定</h1>
         <p className="text-sm text-text2">プロフィール・連携・通知設定を編集できます</p>
       </div>
 
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>プロフィール設定</CardTitle>
+          <CardTitle className="text-accent">プロフィール設定</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div>
@@ -232,16 +232,20 @@ export default function SettingsPage() {
             />
           </div>
           <div className="md:col-span-2">
-            <Button onClick={() => void handleProfileSave()} disabled={savingProfile}>
+            <Button
+              className="bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-hover)]"
+              onClick={() => void handleProfileSave()}
+              disabled={savingProfile}
+            >
               {savingProfile ? '保存中...' : '保存する'}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>LINE連携</CardTitle>
+          <CardTitle className="text-accent">LINE連携</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-4">
           <div>
@@ -263,9 +267,9 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>Discord連携</CardTitle>
+          <CardTitle className="text-accent">Discord連携</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-4">
           <div>
@@ -287,9 +291,9 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>通知設定</CardTitle>
+          <CardTitle className="text-accent">通知設定</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-between">
           <p className="text-sm">月次サマリー通知</p>
@@ -300,7 +304,7 @@ export default function SettingsPage() {
             aria-label="月次サマリー通知のON/OFF"
           >
             <span
-              className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+              className={`absolute top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform ${
                 notificationEnabled ? 'translate-x-8' : 'translate-x-1'
               }`}
             />

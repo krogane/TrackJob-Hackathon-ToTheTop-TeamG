@@ -1,11 +1,13 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { getSupabaseBrowserClient } from '@/lib/supabase'
+import { applyTheme, resolveTheme, saveTheme, toggleTheme, type ThemeMode } from '@/lib/theme'
 
 const navItems = [
   { href: '/dashboard', label: 'ダッシュボード', icon: '📊' },
@@ -16,9 +18,9 @@ const navItems = [
 ] as const
 
 const activeNavItemClass =
-  'bg-[#ffffff] font-semibold text-[#1f8f69] shadow-[0_10px_22px_rgba(31,143,105,0.2)] before:absolute before:inset-y-[20%] before:left-0 before:w-[3px] before:rounded-r before:bg-[#ffffff]'
+  'bg-[var(--sidebar-active-bg)] font-semibold text-[var(--sidebar-active-text)] shadow-[var(--sidebar-active-shadow)] before:absolute before:inset-y-[20%] before:left-0 before:w-[3px] before:rounded-r before:bg-[var(--sidebar-active-bar)]'
 
-const inactiveNavItemClass = 'hover:bg-[#eef9f3] hover:text-text'
+const inactiveNavItemClass = 'hover:bg-[var(--sidebar-hover-bg)] hover:text-text'
 
 interface SidebarProps {
   mobileOpen?: boolean
@@ -28,11 +30,25 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const [themeMode, setThemeMode] = useState<ThemeMode>('light')
+
+  useEffect(() => {
+    const currentTheme = resolveTheme('light')
+    setThemeMode(currentTheme)
+    applyTheme(currentTheme)
+  }, [])
+
+  function handleThemeToggle() {
+    const nextTheme = toggleTheme(themeMode)
+    setThemeMode(nextTheme)
+    applyTheme(nextTheme)
+    saveTheme(nextTheme)
+  }
 
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-white px-3 py-6 shadow-[8px_0_24px_rgba(40,56,90,0.06)] transition-transform md:translate-x-0',
+        'fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-[var(--sidebar-bg)] px-3 py-6 shadow-[var(--sidebar-shadow)] transition-transform md:translate-x-0',
         mobileOpen ? 'translate-x-0' : '-translate-x-full',
       )}
     >
@@ -66,6 +82,14 @@ export function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
       </nav>
 
       <div className="mt-auto space-y-1 border-t border-border px-1 pt-4">
+        <Button
+          variant="ghost"
+          className="h-auto w-full justify-start rounded-[10px] border-none bg-transparent px-3 py-2 text-sm text-text2 shadow-none hover:bg-accent/10 hover:text-text"
+          onClick={handleThemeToggle}
+        >
+          <span className="text-base">{themeMode === 'dark' ? '☀️' : '🌙'}</span>
+          {themeMode === 'dark' ? 'ライトモード' : 'ダークモード'}
+        </Button>
         <Link
           href="/settings"
           onClick={onNavigate}

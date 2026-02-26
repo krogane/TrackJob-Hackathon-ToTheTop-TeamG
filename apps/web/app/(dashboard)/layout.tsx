@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {mobileOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-[rgba(24,53,43,0.28)] md:hidden"
+          className="fixed inset-0 z-30 bg-[var(--overlay)] md:hidden"
           onClick={() => setMobileOpen(false)}
           aria-label="メニューを閉じる"
         />

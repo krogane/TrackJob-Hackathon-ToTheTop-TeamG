@@ -18,7 +18,7 @@ export function ExportTransactionsModal({
 }: ExportTransactionsModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] bg-white">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] bg-card">
         <DialogHeader>
           <DialogTitle>支出データを保存</DialogTitle>
         </DialogHeader>
@@ -33,7 +33,7 @@ export function ExportTransactionsModal({
           </Button>
           <Button
             type="button"
-            className="bg-[#2fbf8f] text-white hover:bg-[#24b47e]"
+            className="bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-hover)]"
             onClick={() => void onDownload()}
             disabled={isDownloading}
           >

@@ -70,41 +70,41 @@ export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] bg-card">
         <DialogHeader>
           <DialogTitle>目標を追加</DialogTitle>
         </DialogHeader>
-        <DialogBody>
-          <form id="add-goal-form" className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-            <div>
+        <DialogBody className="max-h-[58vh] py-3">
+          <form id="add-goal-form" className="space-y-2.5" onSubmit={handleSubmit(onSubmit)}>
+            <div className="space-y-1">
               <label className="text-xs text-text2">タイトル</label>
               <Input {...register('title')} />
               {errors.title ? <p className="text-xs text-danger">{errors.title.message}</p> : null}
             </div>
-            <div>
+            <div className="space-y-1">
               <label className="text-xs text-text2">アイコン</label>
               <Input {...register('icon')} maxLength={2} />
               {errors.icon ? <p className="text-xs text-danger">{errors.icon.message}</p> : null}
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div className="space-y-1">
                 <label className="text-xs text-text2">目標金額</label>
                 <Input type="number" {...register('targetAmount', { valueAsNumber: true })} />
                 {errors.targetAmount ? <p className="text-xs text-danger">{errors.targetAmount.message}</p> : null}
               </div>
-              <div>
+              <div className="space-y-1">
                 <label className="text-xs text-text2">現在貯蓄額</label>
                 <Input type="number" {...register('savedAmount', { valueAsNumber: true })} />
                 {errors.savedAmount ? <p className="text-xs text-danger">{errors.savedAmount.message}</p> : null}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div className="space-y-1">
                 <label className="text-xs text-text2">目標年</label>
                 <Input type="number" {...register('targetYear', { valueAsNumber: true })} />
                 {errors.targetYear ? <p className="text-xs text-danger">{errors.targetYear.message}</p> : null}
               </div>
-              <div>
+              <div className="space-y-1">
                 <label className="text-xs text-text2">優先度</label>
                 <Select {...register('priority')}>
                   <option value="high">high</option>
@@ -113,7 +113,7 @@ export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
                 </Select>
               </div>
             </div>
-            <div>
+            <div className="space-y-1">
               <label className="text-xs text-text2">月次積立額</label>
               <Input type="number" {...register('monthlySaving', { valueAsNumber: true })} />
               {errors.monthlySaving ? <p className="text-xs text-danger">{errors.monthlySaving.message}</p> : null}
@@ -121,10 +121,15 @@ export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
           </form>
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={createGoal.isPending}>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={createGoal.isPending}>
             キャンセル
           </Button>
-          <Button type="submit" form="add-goal-form" disabled={createGoal.isPending}>
+          <Button
+            className="bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-hover)]"
+            type="submit"
+            form="add-goal-form"
+            disabled={createGoal.isPending}
+          >
             {createGoal.isPending ? '追加中...' : '追加'}
           </Button>
         </DialogFooter>

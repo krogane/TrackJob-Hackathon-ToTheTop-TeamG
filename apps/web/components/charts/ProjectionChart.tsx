@@ -32,23 +32,23 @@ export function ProjectionChart({ data, targetLine = 5000000 }: ProjectionChartP
     <div className="h-72 w-full">
       <ResponsiveContainer>
         <ComposedChart data={bandData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(47,74,122,0.12)" />
-          <XAxis dataKey="year" stroke="#6b857b" fontSize={12} />
-          <YAxis stroke="#6b857b" fontSize={12} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+          <XAxis dataKey="year" stroke="var(--text2)" fontSize={12} />
+          <YAxis stroke="var(--text2)" fontSize={12} />
           <Tooltip
             formatter={(value: number) => `¥${value.toLocaleString('ja-JP')}`}
             contentStyle={{
-              background: '#ffffff',
-              border: '1px solid rgba(47,74,122,0.12)',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
               borderRadius: 12,
-              boxShadow: '0 10px 24px rgba(35,55,95,0.08)',
+              boxShadow: 'var(--chart-tooltip-shadow)',
             }}
           />
           <Legend />
-          <ReferenceLine y={targetLine} stroke="#e96b7f" strokeDasharray="6 4" label="目標ライン" />
-          <Area type="monotone" dataKey="p5" stackId="band" stroke="transparent" fill="rgba(47,191,143,0.08)" />
-          <Area type="monotone" dataKey="range" stackId="band" stroke="transparent" fill="rgba(47,191,143,0.2)" name="90%信頼区間" />
-          <Line type="monotone" dataKey="p50" stroke="#2fbf8f" strokeWidth={3} dot={false} name="中央値 p50" />
+          <ReferenceLine y={targetLine} stroke="var(--danger)" strokeDasharray="6 4" label="目標ライン" />
+          <Area type="monotone" dataKey="p5" stackId="band" stroke="transparent" fill="rgba(74,240,176,0.1)" />
+          <Area type="monotone" dataKey="range" stackId="band" stroke="transparent" fill="rgba(74,240,176,0.24)" name="90%信頼区間" />
+          <Line type="monotone" dataKey="p50" stroke="var(--accent)" strokeWidth={3} dot={false} name="中央値 p50" />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
