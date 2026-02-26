@@ -108,7 +108,7 @@ export default function BudgetPage() {
                   <p className="text-sm font-semibold">
                     {goal.icon} {goal.title}
                   </p>
-                  <Badge variant={goal.priority === 'high' ? 'danger' : goal.priority === 'medium' ? 'warning' : 'success'}>
+                  <Badge variant={goal.priority === '高' ? 'danger' : goal.priority === '中' ? 'warning' : 'success'}>
                     {goal.priority}
                   </Badge>
                 </div>

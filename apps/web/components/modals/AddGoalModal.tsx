@@ -17,7 +17,7 @@ const formSchema = z.object({
   savedAmount: z.number({ invalid_type_error: '現在貯蓄額を入力してください' }).min(0, '0円以上を入力してください'),
   targetYear: z.number({ invalid_type_error: '目標年を入力してください' }).min(new Date().getFullYear(), '今年以降を入力してください'),
   monthlySaving: z.number({ invalid_type_error: '月次積立を入力してください' }).min(0, '0円以上を入力してください'),
-  priority: z.enum(['high', 'medium', 'low']),
+  priority: z.enum(['高', '中', '低']),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -40,7 +40,7 @@ export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
     defaultValues: {
       icon: '🎯',
       savedAmount: 0,
-      priority: 'medium',
+      priority: '中',
       targetYear: new Date().getFullYear(),
     },
   })
@@ -63,7 +63,7 @@ export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
       savedAmount: 0,
       targetYear: new Date().getFullYear(),
       monthlySaving: undefined,
-      priority: 'medium',
+      priority: '中',
     })
     onOpenChange(false)
   }
@@ -107,9 +107,9 @@ export function AddGoalModal({ open, onOpenChange }: AddGoalModalProps) {
               <div className="space-y-1">
                 <label className="text-xs text-text2">優先度</label>
                 <Select {...register('priority')}>
-                  <option value="high">high</option>
-                  <option value="medium">medium</option>
-                  <option value="low">low</option>
+                  <option value="高">高</option>
+                  <option value="中">中</option>
+                  <option value="低">低</option>
                 </Select>
               </div>
             </div>

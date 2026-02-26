@@ -35,7 +35,17 @@ const CATEGORY_LABELS: Record<TransactionCategory, string> = {
   side_income: '副収入',
 }
 
-const PIE_COLORS = ['#4af0b0', '#6c8fff', '#ff7eb3', '#ffb547', '#2edd8e', '#9db6ff', '#ffd68f', '#ff96bf', '#7ff3ca']
+const PIE_COLORS = [
+  'var(--pie-1)',
+  'var(--pie-2)',
+  'var(--pie-3)',
+  'var(--pie-4)',
+  'var(--pie-5)',
+  'var(--pie-6)',
+  'var(--pie-7)',
+  'var(--pie-8)',
+  'var(--pie-9)',
+]
 const HEADER_ACTION_BUTTON_CLASS =
   'h-12 bg-[var(--cta-bg)] px-6 text-base font-bold text-[var(--cta-text)] shadow-[var(--cta-shadow)] hover:bg-[var(--cta-hover)]'
 const SECONDARY_ACTION_BUTTON_CLASS = 'h-12 px-6 text-base font-bold'

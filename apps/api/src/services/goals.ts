@@ -31,7 +31,7 @@ function mapGoal(row: {
   savedAmount: number
   monthlySaving: number
   targetYear: number
-  priority: 'high' | 'medium' | 'low'
+  priority: '高' | '中' | '低'
   status: 'active' | 'paused' | 'completed'
   sortOrder: number
   createdAt: Date
@@ -68,7 +68,7 @@ export async function createUserGoal(
     saved_amount?: number
     monthly_saving: number
     target_year: number
-    priority: 'high' | 'medium' | 'low'
+    priority: '高' | '中' | '低'
   },
 ) {
   const sortOrder = await getNextSortOrder(userId)
@@ -101,7 +101,7 @@ export async function patchUserGoal(
     saved_amount: number
     monthly_saving: number
     target_year: number
-    priority: 'high' | 'medium' | 'low'
+    priority: '高' | '中' | '低'
     status: 'active' | 'paused' | 'completed'
   }>,
 ) {

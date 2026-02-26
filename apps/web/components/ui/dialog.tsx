@@ -29,16 +29,18 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
       aria-modal="true"
       tabIndex={-1}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--overlay)] px-4 backdrop-blur-[6px]"
-      onClick={() => onOpenChange(false)}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onOpenChange(false)
+        }
+      }}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           onOpenChange(false)
         }
       }}
     >
-      <div className="flex w-full items-center justify-center" onClick={(event) => event.stopPropagation()}>
-        {children}
-      </div>
+      {children}
     </div>,
     document.body,
   )

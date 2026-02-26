@@ -229,7 +229,7 @@ function buildConfigFromDraft(draft: Required<FallbackDraft>): ChatWizardConfig 
         target_amount: draft.target_amount,
         monthly_saving: goalMonthlySaving,
         target_year: draft.target_year,
-        priority: 'high',
+        priority: '高',
       },
     ],
     suggested_budgets: buildSuggestedBudgets({

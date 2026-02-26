@@ -91,7 +91,7 @@ const cases = [
           "target_amount": 5000000,
           "monthly_saving": 30000,
           "target_year": 2028,
-          "priority": "high"
+          "priority": "高"
         }
       ],
       "suggested_budgets": {

@@ -213,9 +213,9 @@ export function EditTransactionModal({ open, onOpenChange, transaction }: EditTr
         <DialogFooter className="w-full items-center">
           <Button
             type="button"
+            variant="destructive"
             onClick={() => void onDelete()}
             disabled={isPending || !transaction}
-            className="bg-[#e5484d] text-white hover:bg-[#e5484d] focus-visible:bg-[#e5484d] active:bg-[#e5484d]"
           >
             削除
           </Button>

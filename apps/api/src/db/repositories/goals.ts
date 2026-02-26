@@ -33,7 +33,7 @@ export function createGoal(
     savedAmount: number
     monthlySaving: number
     targetYear: number
-    priority: 'high' | 'medium' | 'low'
+    priority: '高' | '中' | '低'
     sortOrder: number
   },
 ) {
@@ -68,7 +68,7 @@ export function updateGoalById(
     savedAmount: number
     monthlySaving: number
     targetYear: number
-    priority: 'high' | 'medium' | 'low'
+    priority: '高' | '中' | '低'
     status: 'active' | 'paused' | 'completed'
   }>,
 ) {

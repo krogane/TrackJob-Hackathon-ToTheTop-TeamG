@@ -246,7 +246,7 @@ export const goalsApi = {
     saved_amount?: number
     monthly_saving: number
     target_year: number
-    priority: 'high' | 'medium' | 'low'
+    priority: '高' | '中' | '低'
   }) =>
     apiRequest<Goal>('/api/goals', {
       method: 'POST',
@@ -261,7 +261,7 @@ export const goalsApi = {
       saved_amount?: number
       monthly_saving?: number
       target_year?: number
-      priority?: 'high' | 'medium' | 'low'
+      priority?: '高' | '中' | '低'
       status?: 'active' | 'paused' | 'completed'
     },
   ) =>

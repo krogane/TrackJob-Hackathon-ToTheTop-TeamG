@@ -250,7 +250,7 @@ export default function DashboardPage() {
           <CardTitle className="text-accent">KakeAIからの提案</CardTitle>
           <Link
             href="/advice"
-            className="inline-flex h-9 items-center justify-center rounded-xl bg-card2 px-3 text-xs font-semibold text-accent transition-all hover:-translate-y-[1px] hover:bg-accent hover:text-white focus-visible:bg-accent focus-visible:text-white active:bg-accent active:text-white"
+            className="inline-flex h-9 items-center justify-center rounded-xl bg-card2 px-3 text-xs font-semibold text-accent transition-all hover:-translate-y-[1px] hover:bg-[var(--cta-bg)] hover:!text-white focus-visible:bg-accent focus-visible:text-white active:bg-accent active:text-white"
           >
             詳しく確認する
           </Link>
@@ -302,7 +302,7 @@ export default function DashboardPage() {
             <CardTitle className="text-accent">最近の収支記録</CardTitle>
             <Link
               href="/expense"
-              className="inline-flex h-9 items-center justify-center rounded-xl bg-card2 px-3 text-xs font-semibold text-accent transition-all hover:-translate-y-[1px] hover:bg-accent hover:text-white focus-visible:bg-accent focus-visible:text-white active:bg-accent active:text-white"
+              className="inline-flex h-9 items-center justify-center rounded-xl bg-card2 px-3 text-xs font-semibold text-accent transition-all hover:-translate-y-[1px] hover:bg-[var(--cta-bg)] hover:!text-white focus-visible:bg-accent focus-visible:text-white active:bg-accent active:text-white"
             >
               詳しく確認する
             </Link>

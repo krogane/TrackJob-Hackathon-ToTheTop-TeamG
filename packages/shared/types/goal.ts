@@ -1,4 +1,4 @@
-export const GOAL_PRIORITIES = ['high', 'medium', 'low'] as const
+export const GOAL_PRIORITIES = ['高', '中', '低'] as const
 export const GOAL_STATUSES = ['active', 'paused', 'completed'] as const
 
 export type GoalPriority = (typeof GOAL_PRIORITIES)[number]

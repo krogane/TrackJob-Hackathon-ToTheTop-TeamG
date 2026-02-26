@@ -4,7 +4,7 @@
   --bg: #fbfefd;
   --bg2: #ffffff;
   --card: #ffffff;
-  --card2: #f7f9ff;
+  --card2: #ffffff;
   --border: rgba(47, 74, 122, 0.1);
   --accent: #2fbf8f;
   --accent2: #66d9b8;
@@ -19,6 +19,15 @@
   --track-muted: rgba(47, 74, 122, 0.12);
   --chart-grid: rgba(47, 74, 122, 0.12);
   --chart-tooltip-shadow: 0 10px 24px rgba(35, 55, 95, 0.08);
+  --pie-1: #2fbf8f;
+  --pie-2: #6c8fff;
+  --pie-3: #ff7eb3;
+  --pie-4: #ffb547;
+  --pie-5: #24b47e;
+  --pie-6: #9db6ff;
+  --pie-7: #ffd68f;
+  --pie-8: #ff96bf;
+  --pie-9: #7ff3ca;
   --sidebar-bg: #ffffff;
   --sidebar-shadow: 8px 0 24px rgba(40, 56, 90, 0.06);
   --sidebar-active-bg: #ffffff;
@@ -38,12 +47,12 @@
 }
 
 :root[data-theme='dark'] {
-  --bg: #0a0e1a;
+  --bg: #070b15;
   --bg2: #0f1524;
-  --card: #131929;
-  --card2: #1a2235;
+  --card: #171d2d;
+  --card2: #1e2639;
   --border: rgba(255, 255, 255, 0.07);
-  --accent: #4af0b0;
+  --accent: #39d79d;
   --accent2: #6c8fff;
   --accent3: #ff7eb3;
   --warn: #ffb547;
@@ -56,6 +65,15 @@
   --track-muted: rgba(255, 255, 255, 0.11);
   --chart-grid: rgba(255, 255, 255, 0.08);
   --chart-tooltip-shadow: 0 10px 24px rgba(5, 8, 18, 0.45);
+  --pie-1: #30b985;
+  --pie-2: #4f6cc4;
+  --pie-3: #c45e8c;
+  --pie-4: #b88330;
+  --pie-5: #279f71;
+  --pie-6: #7485c4;
+  --pie-7: #c49c5e;
+  --pie-8: #b86a90;
+  --pie-9: #47a383;
   --sidebar-bg: #0f1524;
   --sidebar-shadow: 8px 0 24px rgba(3, 6, 16, 0.45);
   --sidebar-active-bg: rgba(74, 240, 176, 0.1);
@@ -64,14 +82,31 @@
   --sidebar-active-shadow: none;
   --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
   --overlay: rgba(10, 14, 26, 0.62);
-  --cta-bg: #4af0b0;
-  --cta-hover: #3ddca0;
+  --cta-bg: #39d79d;
+  --cta-hover: #2fbe8a;
   --cta-text: #0a1a12;
   --cta-shadow: 0 10px 22px rgba(74, 240, 176, 0.24);
-  --body-grad-1: rgba(74, 240, 176, 0.12);
-  --body-grad-2: rgba(108, 143, 255, 0.1);
-  --body-grad-3: rgba(255, 126, 179, 0.09);
+  --body-grad-1: rgba(74, 240, 176, 0.08);
+  --body-grad-2: rgba(108, 143, 255, 0.07);
+  --body-grad-3: rgba(255, 126, 179, 0.06);
   color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg2: var(--bg2);
+  --color-card: var(--card);
+  --color-card2: var(--card2);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent2: var(--accent2);
+  --color-accent3: var(--accent3);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-text: var(--text);
+  --color-text2: var(--text2);
+  --color-text3: var(--text3);
 }
 
 * {

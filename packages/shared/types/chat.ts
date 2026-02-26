@@ -9,7 +9,7 @@ export interface ChatWizardGoalConfig {
   target_amount: number
   monthly_saving: number
   target_year: number
-  priority: 'high' | 'medium' | 'low'
+  priority: '高' | '中' | '低'
 }
 
 export interface ChatWizardConfig {

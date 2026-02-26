@@ -60,7 +60,7 @@ export function Tabs({ options, value, onValueChange, ariaLabel = 'タブ一覧'
           className={cn(
             'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
             value === option.value
-              ? 'bg-accent text-white shadow-[0_6px_14px_rgba(74,240,176,0.25)]'
+              ? 'bg-[var(--cta-bg)] text-[var(--cta-text)] shadow-[var(--cta-shadow)]'
               : 'text-text2 hover:text-text',
           )}
         >
