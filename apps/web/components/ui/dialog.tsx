@@ -28,7 +28,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
       role="dialog"
       aria-modal="true"
       tabIndex={-1}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-[rgba(24,53,43,0.3)] px-4 backdrop-blur-[6px]"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--overlay)] px-4 backdrop-blur-[6px]"
       onClick={() => onOpenChange(false)}
       onKeyDown={(event) => {
         if (event.key === 'Escape') {

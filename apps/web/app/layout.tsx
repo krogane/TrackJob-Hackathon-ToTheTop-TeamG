@@ -3,6 +3,7 @@ import { Noto_Sans_JP, Syne } from 'next/font/google'
 
 import { AppOverlayProvider } from '@/components/providers/AppOverlayProvider'
 import { QueryProvider } from '@/components/providers/QueryProvider'
+import { THEME_STORAGE_KEY } from '@/lib/theme'
 
 import './globals.css'
 
@@ -25,7 +26,23 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(() => {
+  try {
+    const savedTheme = localStorage.getItem('${THEME_STORAGE_KEY}');
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      document.documentElement.dataset.theme = savedTheme;
+    }
+  } catch {
+    // no-op
+  }
+})();`,
+          }}
+        />
+      </head>
       <body className={`${syne.variable} ${notoSansJp.variable} font-body`}>
         <QueryProvider>
           {children}

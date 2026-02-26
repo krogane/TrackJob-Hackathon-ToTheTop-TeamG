@@ -66,7 +66,9 @@ export function BudgetEditForm({
       <div className="flex justify-end">
         <Button
           type="button"
+          variant="ghost"
           size="sm"
+          className="text-text hover:bg-accent hover:text-white"
           onClick={() =>
             onSaveAll({
               budgets: items.map((item) => ({

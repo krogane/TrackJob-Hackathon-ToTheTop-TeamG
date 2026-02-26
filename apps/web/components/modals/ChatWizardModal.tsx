@@ -87,14 +87,14 @@ export function ChatWizardModal() {
         }
       }}
     >
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[720px] bg-card">
         <DialogHeader>
           <DialogTitle>チャットウィザード（AI）</DialogTitle>
         </DialogHeader>
-        <DialogBody>
+        <DialogBody className="max-h-[58vh] py-3">
           <div className="mb-3 text-xs text-text2">会話で設定を作成し、完了時にまとめて保存します。</div>
           {wizard.mode === 'fallback' ? (
-            <p className="mb-3 rounded-md border border-warn/40 bg-warn/25 px-3 py-2 text-xs text-[#9f6f16]">
+            <p className="mb-3 rounded-md border border-warn/40 bg-warn/25 px-3 py-2 text-xs text-[var(--warn-text)]">
               AI応答の代わりにルールベースで進行中です。
             </p>
           ) : null}
@@ -159,7 +159,12 @@ export function ChatWizardModal() {
                 disabled={wizard.loading}
                 aria-label="チャット入力"
               />
-              <Button type="submit" disabled={!wizard.canSend} aria-label="送信">
+              <Button
+                type="submit"
+                className="bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-hover)]"
+                disabled={!wizard.canSend}
+                aria-label="送信"
+              >
                 送信
               </Button>
             </form>
@@ -183,6 +188,7 @@ export function ChatWizardModal() {
 
           <Button
             type="button"
+            className="bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-hover)]"
             disabled={!canSave}
             onClick={async () => {
               try {

@@ -164,7 +164,7 @@ export default function SetupPage() {
 
         <div className="rounded-2xl border border-border bg-card p-6 shadow-[0_10px_28px_rgba(35,55,95,0.06)]">
           {wizard.mode === 'fallback' ? (
-            <p className="mb-3 rounded-md border border-warn/40 bg-warn/25 px-3 py-2 text-xs text-[#9f6f16]">
+            <p className="mb-3 rounded-md border border-warn/40 bg-warn/25 px-3 py-2 text-xs text-[var(--warn-text)]">
               AI応答の代わりにルールベースで進行中です。
             </p>
           ) : null}

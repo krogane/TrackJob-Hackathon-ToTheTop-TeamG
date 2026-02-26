@@ -98,7 +98,7 @@ export function AddIncomeModal({ open, onOpenChange }: AddIncomeModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] bg-white">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] bg-card">
         <DialogHeader>
           <DialogTitle>収入を追加</DialogTitle>
         </DialogHeader>
@@ -148,7 +148,7 @@ export function AddIncomeModal({ open, onOpenChange }: AddIncomeModalProps) {
                           type="button"
                           className={`rounded-lg border px-2 py-2 text-xs transition-colors ${
                             isSelected
-                              ? 'border-[#1f8f69] bg-[#e7f8f0] text-[#1f8f69] shadow-[0_6px_12px_rgba(31,143,105,0.2)]'
+                              ? 'border-accent bg-accent/15 text-accent shadow-[0_6px_12px_rgba(31,143,105,0.2)]'
                               : 'border-border bg-card2 text-text2 hover:border-accent/40 hover:text-text'
                           }`}
                           onClick={() => {
@@ -182,7 +182,7 @@ export function AddIncomeModal({ open, onOpenChange }: AddIncomeModalProps) {
             キャンセル
           </Button>
           <Button
-            className="bg-[#2fbf8f] text-white hover:bg-[#24b47e]"
+            className="bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-hover)]"
             form="add-income-form"
             type="submit"
             disabled={createTransaction.isPending}

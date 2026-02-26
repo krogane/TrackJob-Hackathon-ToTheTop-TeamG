@@ -143,7 +143,7 @@ export function EditTransactionModal({ open, onOpenChange, transaction }: EditTr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] bg-white">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[560px] bg-card">
         <DialogHeader>
           <DialogTitle>履歴を編集</DialogTitle>
         </DialogHeader>
@@ -224,7 +224,7 @@ export function EditTransactionModal({ open, onOpenChange, transaction }: EditTr
               キャンセル
             </Button>
             <Button
-              className="bg-[#2fbf8f] text-white hover:bg-[#24b47e]"
+              className="bg-[var(--cta-bg)] text-[var(--cta-text)] hover:bg-[var(--cta-hover)]"
               form="edit-transaction-form"
               type="submit"
               disabled={isPending || !transaction}

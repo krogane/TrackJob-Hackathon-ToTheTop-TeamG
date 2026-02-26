@@ -112,12 +112,12 @@ export default function DashboardPage() {
     expenseRate > 0.8
       ? 'var(--danger)'
       : expenseRate > 0.5
-        ? '#e9a33f'
+        ? 'var(--warn)'
         : 'var(--accent)'
 
   const guidanceMessage = useMemo(() => {
     if (expenseRate > 1) {
-      return `予算を${overAmount.toLocaleString('ja-JP')}円超過しています。支出ペースの見直しが必要です。`
+      return `予算を${overAmount.toLocaleString('ja-JP')}円超えています。支出ペースの見直しが必要です。`
     }
     if (expenseRate > 0.8) {
       return 'おっと、残り予算がかなり少なくなっています。'
@@ -161,7 +161,7 @@ export default function DashboardPage() {
     <div className="space-y-4 pb-20 md:pb-28">
       <div className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
         <div>
-          <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-[#1c3b30]">
+          <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">
             おかえりなさい、{displayName}さん。
           </h1>
           <p className="text-sm text-text2">
@@ -171,13 +171,13 @@ export default function DashboardPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
-            className="h-12 bg-[#2fbf8f] px-6 text-base font-bold text-white shadow-[0_10px_20px_rgba(47,191,143,0.24)] hover:bg-[#24b47e]"
+            className="h-12 bg-[var(--cta-bg)] px-6 text-base font-bold text-[var(--cta-text)] shadow-[var(--cta-shadow)] hover:bg-[var(--cta-hover)]"
             onClick={() => setIncomeModalOpen(true)}
           >
             ＋ 収入を追加
           </Button>
           <Button
-            className="h-12 bg-[#2fbf8f] px-6 text-base font-bold text-white shadow-[0_10px_20px_rgba(47,191,143,0.24)] hover:bg-[#24b47e]"
+            className="h-12 bg-[var(--cta-bg)] px-6 text-base font-bold text-[var(--cta-text)] shadow-[var(--cta-shadow)] hover:bg-[var(--cta-hover)]"
             onClick={() => setExpenseModalOpen(true)}
           >
             ＋ 支出を追加
@@ -187,17 +187,17 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/expense" className="block sm:col-span-2 lg:col-span-2">
-          <Card className="min-h-[220px] cursor-pointer bg-white transition-transform hover:-translate-y-[1px]">
+          <Card className="min-h-[220px] cursor-pointer bg-card transition-transform hover:-translate-y-[1px]">
             <CardContent className="h-full">
               <div className="flex h-full flex-col justify-between gap-5 sm:flex-row sm:items-center">
                 <div className="flex-1 space-y-2">
                   <div className="space-y-1">
-                    <p className="text-lg font-semibold text-[#2fbf8f]">今月の支出</p>
+                    <p className="text-lg font-semibold text-accent">今月の支出</p>
                     <p className="font-display text-[34px] font-bold tracking-[-0.02em] text-text">{formatCurrency(totalExpense)}</p>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="space-y-1">
-                    <p className="text-lg font-semibold text-[#2fbf8f]">今月の予算</p>
+                    <p className="text-lg font-semibold text-accent">今月の予算</p>
                     <p className="font-display text-[34px] font-bold tracking-[-0.02em] text-text">{formatCurrency(totalBudget)}</p>
                   </div>
                 </div>
@@ -207,7 +207,7 @@ export default function DashboardPage() {
                     <div
                       className="h-full w-full rounded-full"
                       style={{
-                        background: `conic-gradient(${budgetUsageTone} ${ringPercent}%, rgba(47,191,143,0.14) 0)`,
+                        background: `conic-gradient(${budgetUsageTone} ${ringPercent}%, var(--track-muted) 0)`,
                         WebkitMask: 'radial-gradient(farthest-side, transparent calc(100% - 20px), #000 calc(100% - 20px))',
                         mask: 'radial-gradient(farthest-side, transparent calc(100% - 20px), #000 calc(100% - 20px))',
                       }}
@@ -224,33 +224,33 @@ export default function DashboardPage() {
           </Card>
         </Link>
 
-        <Card className="min-h-[100px] bg-white sm:col-span-1 lg:col-span-1">
+        <Card className="min-h-[100px] bg-card sm:col-span-1 lg:col-span-1">
           <CardHeader className="mb-2">
-            <CardTitle className="text-[#2fbf8f]">連続記録日数</CardTitle>
+            <CardTitle className="text-accent">連続記録日数</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="font-display text-6xl font-bold text-text">{streakDays}日</p>
-            <p className="mt-3 text-s text-text2">毎日の記録を継続中！</p>
+            <p className="mt-3 text-xs text-text2">毎日の記録を継続中！</p>
           </CardContent>
         </Card>
 
-        <Card className="min-h-[100px] bg-white sm:col-span-1 lg:col-span-1">
+        <Card className="min-h-[100px] bg-card sm:col-span-1 lg:col-span-1">
           <CardHeader className="mb-2">
-            <CardTitle className="text-[#2fbf8f]">連続予算達成</CardTitle>
+            <CardTitle className="text-accent">連続予算達成</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="font-display text-6xl font-bold text-text">{budgetAchievementStreak}ヶ月</p>
-            <p className="mt-3 text-s text-text2">予算内で推移した連続月数</p>
+            <p className="mt-3 text-xs text-text2">予算内支出を連続達成した期間</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="min-h-[232px] bg-white">
+      <Card className="min-h-[232px] bg-card">
         <CardHeader>
-          <CardTitle className="text-[#2fbf8f]">KakeAIからの提案</CardTitle>
+          <CardTitle className="text-accent">KakeAIからの提案</CardTitle>
           <Link
             href="/advice"
-            className="inline-flex h-9 items-center justify-center rounded-xl bg-card2 px-3 text-xs font-semibold text-[#2fbf8f] transition-all hover:-translate-y-[1px] hover:bg-[#2fbf8f] hover:text-white focus-visible:bg-[#2fbf8f] focus-visible:text-white active:bg-[#2fbf8f] active:text-white"
+            className="inline-flex h-9 items-center justify-center rounded-xl bg-card2 px-3 text-xs font-semibold text-accent transition-all hover:-translate-y-[1px] hover:bg-accent hover:text-white focus-visible:bg-accent focus-visible:text-white active:bg-accent active:text-white"
           >
             詳しく確認する
           </Link>
@@ -276,9 +276,9 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
-        <Card className="bg-white">
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle className="text-[#2fbf8f]">支出トレンド</CardTitle>
+            <CardTitle className="text-accent">支出トレンド</CardTitle>
             <Tabs
               options={tabs}
               value={range}
@@ -290,19 +290,19 @@ export default function DashboardPage() {
             {trendData.length > 0 ? (
               <TrendChart data={trendData} />
             ) : (
-              <div className="grid min-h-[230px] place-items-center rounded-xl border border-dashed border-border bg-[#fbfffd] text-sm text-text2">
+              <div className="grid min-h-[230px] place-items-center rounded-xl border border-dashed border-border bg-card2 text-sm text-text2">
                 記録はまだありません。
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className="bg-white">
+        <Card className="bg-card">
           <CardHeader>
-            <CardTitle className="text-[#2fbf8f]">最近の収支記録</CardTitle>
+            <CardTitle className="text-accent">最近の収支記録</CardTitle>
             <Link
               href="/expense"
-              className="inline-flex h-9 items-center justify-center rounded-xl bg-card2 px-3 text-xs font-semibold text-[#2fbf8f] transition-all hover:-translate-y-[1px] hover:bg-[#2fbf8f] hover:text-white focus-visible:bg-[#2fbf8f] focus-visible:text-white active:bg-[#2fbf8f] active:text-white"
+              className="inline-flex h-9 items-center justify-center rounded-xl bg-card2 px-3 text-xs font-semibold text-accent transition-all hover:-translate-y-[1px] hover:bg-accent hover:text-white focus-visible:bg-accent focus-visible:text-white active:bg-accent active:text-white"
             >
               詳しく確認する
             </Link>
@@ -310,7 +310,7 @@ export default function DashboardPage() {
           <CardContent className="space-y-2">
             {transactionsLoading ? <p className="text-sm text-text2">収支履歴を読み込み中...</p> : null}
             {!transactionsLoading && recentTransactions.length === 0 ? (
-              <div className="grid min-h-[190px] place-items-center rounded-xl border border-dashed border-border bg-[#fbfffd] text-sm text-text2">
+              <div className="grid min-h-[190px] place-items-center rounded-xl border border-dashed border-border bg-card2 text-sm text-text2">
                 記録はまだありません。
               </div>
             ) : null}
@@ -331,7 +331,7 @@ export default function DashboardPage() {
                       {transaction.transacted_at} ・ {CATEGORY_LABELS[transaction.category] ?? transaction.category}
                     </p>
                   </div>
-                  <p className={signedAmount < 0 ? 'text-[#e96b7f]' : 'text-[#24b47e]'}>
+                  <p className={signedAmount < 0 ? 'text-danger' : 'text-success'}>
                     {signedAmount < 0 ? '-' : '+'}
                     {formatCurrency(Math.abs(signedAmount))}
                   </p>
@@ -342,13 +342,13 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card className="bg-white">
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle className="text-[#2fbf8f]">ライフプランの進捗</CardTitle>
+          <CardTitle className="text-accent">ライフプランの進捗</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {goals.length === 0 ? (
-            <div className="grid min-h-[190px] place-items-center rounded-xl border border-dashed border-border bg-[#fbfffd] text-sm text-text2">
+            <div className="grid min-h-[190px] place-items-center rounded-xl border border-dashed border-border bg-card2 text-sm text-text2">
               目標がまだ登録されていません。
             </div>
           ) : null}
@@ -364,7 +364,7 @@ export default function DashboardPage() {
                 </p>
                 <p className="text-xs text-text2">{goal.target_year}年</p>
               </div>
-              <div className="mt-2 h-2 rounded-full bg-[rgba(47,74,122,0.12)]">
+              <div className="mt-2 h-2 rounded-full bg-[var(--track-muted)]">
                 <div className="h-full rounded-full bg-accent2" style={{ width: `${goal.progress_rate * 100}%` }} />
               </div>
               <p className="mt-1 text-xs text-text2">

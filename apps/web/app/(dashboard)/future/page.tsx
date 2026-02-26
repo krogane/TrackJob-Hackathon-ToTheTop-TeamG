@@ -125,13 +125,13 @@ export default function FuturePage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-display text-2xl font-bold">ライフプラン</h1>
+        <h1 className="font-display text-[30px] font-bold leading-tight tracking-[-0.02em] text-text">ライフプラン</h1>
         <p className="text-sm text-text2">前提条件を変更して資産推移を確認できます</p>
       </div>
 
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>前提条件</CardTitle>
+          <CardTitle className="text-accent">前提条件</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           {isLoading ? <p className="text-sm text-text2 md:col-span-2">前提条件を読み込み中...</p> : null}
@@ -188,7 +188,7 @@ export default function FuturePage() {
           />
           <div className="self-end">
             {runSimulation.isLoading ? <p className="text-xs text-text2">初回シミュレーションを読み込み中...</p> : null}
-            {runSimulation.error ? <p className="text-xs text-[#9f6f16]">シミュレーションAPI取得に失敗したため、表示はフォールバック値です。</p> : null}
+            {runSimulation.error ? <p className="text-xs text-[var(--warn-text)]">シミュレーションAPI取得に失敗したため、表示はフォールバック値です。</p> : null}
             <p className="text-xs text-accent2">{simulationStatus}</p>
           </div>
         </CardContent>
@@ -196,9 +196,9 @@ export default function FuturePage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         {displaySimulation.goal_probabilities.map((goal) => (
-          <Card key={goal.goal_id}>
+          <Card key={goal.goal_id} className="bg-card">
             <CardHeader>
-              <CardTitle>{goal.title}</CardTitle>
+              <CardTitle className="text-accent">{goal.title}</CardTitle>
             </CardHeader>
             <CardContent>
               <GaugeChart value={goal.probability} label={`${goal.target_year}年までの達成確率`} />
@@ -207,18 +207,18 @@ export default function FuturePage() {
         ))}
       </div>
 
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>資産推移シミュレーション</CardTitle>
+          <CardTitle className="text-accent">資産推移シミュレーション</CardTitle>
         </CardHeader>
         <CardContent>
           <ProjectionChart data={displaySimulation.yearly_projections} targetLine={targetLine} />
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-card">
         <CardHeader>
-          <CardTitle>シナリオ比較</CardTitle>
+          <CardTitle className="text-accent">シナリオ比較</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

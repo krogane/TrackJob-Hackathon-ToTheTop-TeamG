@@ -63,10 +63,10 @@ export function ExpensePieChart({ data }: ExpensePieChartProps) {
           <Tooltip
             formatter={(value: number) => `¥${value.toLocaleString('ja-JP')}`}
             contentStyle={{
-              background: '#ffffff',
-              border: '1px solid rgba(47,74,122,0.12)',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
               borderRadius: 12,
-              boxShadow: '0 10px 24px rgba(35,55,95,0.08)',
+              boxShadow: 'var(--chart-tooltip-shadow)',
             }}
           />
         </PieChart>
