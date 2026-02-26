@@ -21,6 +21,7 @@ services:
       - lifebalance
 
   api:
+    command: bun run --watch src/index.ts
     build:
       context: .
       dockerfile: ./apps/api/Dockerfile
