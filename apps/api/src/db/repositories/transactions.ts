@@ -288,6 +288,21 @@ export async function getRecordingStreak(userId: string): Promise<number> {
   return streak
 }
 
+export async function getDailyTrend(userId: string, since: string) {
+  return db
+    .select({
+      day: sql<string>`to_char(${transactions.transactedAt}::date, 'YYYY-MM-DD')`,
+      expense:
+        sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' THEN ${transactions.amount} ELSE 0 END), 0)`,
+      income:
+        sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' THEN ${transactions.amount} ELSE 0 END), 0)`,
+    })
+    .from(transactions)
+    .where(and(eq(transactions.userId, userId), gte(transactions.transactedAt, since)))
+    .groupBy(sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM-DD')`)
+    .orderBy(asc(sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM-DD')`))
+}
+
 export async function getWeeklyTrend(userId: string, since: string) {
   return db
     .select({
