@@ -4,6 +4,11 @@ export const profileMock: UserProfile = {
   id: 'user-1',
   display_name: '田中 太郎',
   monthly_income: 280000,
+  notification_reminder: true,
+  notification_weekly: true,
+  notification_monthly: true,
+  notification_line: true,
+  notification_discord: true,
   created_at: '2025-01-01T00:00:00Z',
   updated_at: '2025-06-29T00:00:00Z',
 }
