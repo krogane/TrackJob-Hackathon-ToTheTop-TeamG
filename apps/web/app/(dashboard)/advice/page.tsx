@@ -26,18 +26,6 @@ type AdviceDetailModalContent = {
   generationError: string | null
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const IMPROVEMENT_DETAIL_FALLBACK_ITEMS = [
-  '直近14日間の同カテゴリ支出を確認し、固定費・変動費に分けて改善対象を明確化する',
-  '金額インパクトが大きい項目から優先順位を付け、今月中に1件見直す',
-  '週の中間時点で実績を確認し、必要なら予算配分を微調整する',
-]
-
-const POSITIVE_DETAIL_FALLBACK_ITEMS = [
-  '現在の良い行動を再現できる形に整理し、来月のルールとして固定化する',
-  '達成理由を金額や頻度で言語化し、再現しやすい条件を残す',
-  '来月も続ける条件を1つ決め、設定に反映して習慣化する',
-]
 
 export default function AdvicePage() {
   const { advice, history, loading, refreshing, error, refresh } = useAdvice()
