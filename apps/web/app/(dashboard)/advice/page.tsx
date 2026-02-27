@@ -391,10 +391,13 @@ function QuestionPanel() {
   const [messages, setMessages] = useState<QaMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = scrollContainerRef.current
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+    }
   }, [messages, loading])
 
   async function handleSubmit(event: React.FormEvent) {
@@ -426,6 +429,7 @@ function QuestionPanel() {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div
+          ref={scrollContainerRef}
           className="max-h-[360px] space-y-3 overflow-y-auto"
           aria-live="polite"
         >
@@ -466,7 +470,6 @@ function QuestionPanel() {
               </div>
             </div>
           ) : null}
-          <div ref={bottomRef} />
         </div>
         <form className="flex shrink-0 gap-2" onSubmit={(event) => void handleSubmit(event)}>
           <Input
