@@ -323,7 +323,7 @@ export default function SetupPage() {
 
     const parsed = parseQuestionInput(currentQuestion, inputValue)
     if (!parsed.ok) {
-      setQuestionError(parsed.error)
+      setQuestionError(parsed.error ?? '')
       return
     }
 
