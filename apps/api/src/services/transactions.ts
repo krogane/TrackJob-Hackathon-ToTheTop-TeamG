@@ -1,6 +1,7 @@
 import {
   createTransaction,
   deleteTransactionById,
+  getDailyTrend,
   getMonthlyTrend,
   getRecordingStreak,
   getSpentAmountsByCategory,
@@ -248,9 +249,22 @@ export async function getTransactionTrend(userId: string, range: '1m' | '3m' | '
     }))
   }
 
-  const days = range === '1m' ? 28 : 91
   const since = new Date(now)
-  since.setUTCDate(since.getUTCDate() - days)
+  if (range === '1m') {
+    since.setUTCDate(since.getUTCDate() - 28)
+    const sinceDate = since.toISOString().slice(0, 10)
+    const rows = await getDailyTrend(userId, sinceDate)
+    return rows.map((row) => {
+      const [, m, d] = row.day.split('-')
+      return {
+        label: `${Number(m)}/${Number(d)}`,
+        expense: row.expense,
+        saving: row.income - row.expense,
+      }
+    })
+  }
+
+  since.setUTCDate(since.getUTCDate() - 91)
   const sinceDate = since.toISOString().slice(0, 10)
   const rows = await getWeeklyTrend(userId, sinceDate)
   return rows.map((row) => {
