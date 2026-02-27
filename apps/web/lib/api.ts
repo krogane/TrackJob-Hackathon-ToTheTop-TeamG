@@ -87,7 +87,7 @@ function createQueryString(params: Record<string, string | number | undefined>) 
   return queryString ? `?${queryString}` : ''
 }
 
-type AssumptionsUpdateBody = Omit<Assumption, 'id' | 'updated_at'> & {
+type AssumptionsUpdateBody = Omit<Assumption, 'id' | 'updated_at' | 'simulation_trials'> & {
   simulation_trials?: Assumption['simulation_trials']
 }
 
