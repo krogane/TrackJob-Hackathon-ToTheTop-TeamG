@@ -60,7 +60,7 @@ export default function AdvicePage() {
 
       {error ? <p className="text-sm text-danger">{error}</p> : null}
 
-      <div className="grid gap-4 xl:items-start xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
         <div className="space-y-4">
           <Card className="bg-card">
             <CardContent className="grid gap-4 p-0 lg:grid-cols-[240px_minmax(0,1fr)]">
@@ -174,13 +174,13 @@ function QuestionPanel() {
   }
 
   return (
-    <Card className="bg-card xl:self-start">
-      <CardHeader>
+    <Card className="flex h-full flex-col bg-card">
+      <CardHeader className="shrink-0">
         <CardTitle className="text-base text-accent">🤖 KakeAIに質問する</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
         <div
-          className="max-h-[360px] space-y-3 overflow-y-auto rounded-xl border border-border bg-bg2 p-3"
+          className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-border bg-bg2 p-3"
           aria-live="polite"
         >
           {messages.length === 0 ? (
@@ -222,7 +222,7 @@ function QuestionPanel() {
           ) : null}
           <div ref={bottomRef} />
         </div>
-        <form className="flex gap-2" onSubmit={(event) => void handleSubmit(event)}>
+        <form className="flex shrink-0 gap-2" onSubmit={(event) => void handleSubmit(event)}>
           <Input
             value={input}
             onChange={(event) => setInput(event.target.value)}
