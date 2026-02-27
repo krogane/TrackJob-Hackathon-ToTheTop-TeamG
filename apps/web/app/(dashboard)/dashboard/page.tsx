@@ -215,14 +215,25 @@ export default function DashboardPage() {
 
   const greeting = useMemo(() => getDashboardGreeting(now), [now])
 
-  const trendData = useMemo(
-    () =>
-      (rawTrendData ?? []).map((point) => ({
-        ...point,
-        budget: budgetSummary?.total_budget ?? 0,
-      })),
-    [rawTrendData, budgetSummary?.total_budget],
-  )
+  const trendData = useMemo(() => {
+    const year = parseInt(currentYearMonth.slice(0, 4))
+    const month = parseInt(currentYearMonth.slice(5, 7))
+    const daysInMonth = new Date(year, month, 0).getDate()
+
+    let periodBudget: number
+    if (range === '1m') {
+      periodBudget = totalBudget / daysInMonth
+    } else if (range === '3m') {
+      periodBudget = (totalBudget * 7) / daysInMonth
+    } else {
+      periodBudget = totalBudget
+    }
+
+    return (rawTrendData ?? []).map((point) => ({
+      ...point,
+      budget: periodBudget,
+    }))
+  }, [rawTrendData, totalBudget, range, currentYearMonth])
 
   const budgetAchievementStreak = useMemo(() => {
     const points = [...(yearlyTrendData ?? [])].reverse()
@@ -444,7 +455,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent id={`tab-panel-${range}`} role="tabpanel">
             {trendData.length > 0 ? (
-              <TrendChart data={trendData} />
+              <TrendChart data={trendData} range={range} />
             ) : (
               <div className="grid min-h-[230px] place-items-center rounded-xl border border-dashed border-border bg-card2 text-sm text-text2">
                 記録はまだありません。

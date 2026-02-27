@@ -11,16 +11,22 @@ interface TrendPoint {
 
 interface TrendChartProps {
   data: TrendPoint[]
+  range?: '1m' | '3m' | '1y'
 }
 
-export function TrendChart({ data }: TrendChartProps) {
+export function TrendChart({ data, range }: TrendChartProps) {
+  const budgetLabel =
+    range === '1m' ? '予算上限（日割り）' : range === '3m' ? '予算上限（週割り）' : '予算上限（月割り）'
+  const budgetLimit = data.find((d) => d.budget !== undefined)?.budget ?? 0
+  const yAxisDomain = budgetLimit > 0 ? ([0, Math.ceil(budgetLimit * 1.2)] as [number, number]) : undefined
+
   return (
     <div className="h-56 w-full">
       <ResponsiveContainer>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
           <XAxis dataKey="label" stroke="var(--text2)" fontSize={12} />
-          <YAxis stroke="var(--text2)" fontSize={12} />
+          <YAxis stroke="var(--text2)" fontSize={12} domain={yAxisDomain} />
           <Tooltip
             contentStyle={{
               background: 'var(--card)',
@@ -39,7 +45,7 @@ export function TrendChart({ data }: TrendChartProps) {
               strokeWidth={2.2}
               strokeDasharray="7 6"
               dot={false}
-              name="予算上限"
+              name={budgetLabel}
             />
           )}
         </LineChart>
