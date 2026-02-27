@@ -331,11 +331,11 @@ function resolveFallbackTurn(state: FallbackState, input: string, setupContext: 
         assistantMessage: 'ヒアリングが完了しました。設定内容を確認して「保存する」を押してください。',
         completedConfig: buildConfigFromDraft(
           {
-            event_title: draft.event_title,
-            target_year: draft.target_year,
-            target_amount: draft.target_amount,
-            monthly_savings_target: draft.monthly_savings_target,
-            priority: draft.priority,
+            event_title: draft.event_title!,
+            target_year: draft.target_year!,
+            target_amount: draft.target_amount!,
+            monthly_savings_target: draft.monthly_savings_target!,
+            priority: draft.priority!,
           },
           setupContext,
         ),
