@@ -381,13 +381,10 @@ function QuestionPanel() {
   const [messages, setMessages] = useState<QaMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (messages.length === 0 && !loading) return
-    const container = messagesContainerRef.current
-    if (!container) return
-    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
   async function handleSubmit(event: React.FormEvent) {
@@ -417,10 +414,9 @@ function QuestionPanel() {
       <CardHeader className="shrink-0">
         <CardTitle className="text-base text-accent">🤖 KakeAIに質問する</CardTitle>
       </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
+      <CardContent className="flex flex-col gap-4">
         <div
-          ref={messagesContainerRef}
-          className="min-h-0 flex-1 space-y-3 overflow-y-auto"
+          className="max-h-[360px] space-y-3 overflow-y-auto"
           aria-live="polite"
         >
           {messages.length === 0 ? (
@@ -460,6 +456,7 @@ function QuestionPanel() {
               </div>
             </div>
           ) : null}
+          <div ref={bottomRef} />
         </div>
         <form className="flex shrink-0 gap-2" onSubmit={(event) => void handleSubmit(event)}>
           <Input
