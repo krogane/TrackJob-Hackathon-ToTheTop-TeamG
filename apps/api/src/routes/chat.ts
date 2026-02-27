@@ -10,7 +10,7 @@ const chatRoute = new Hono<AppBindings>()
 
 chatRoute.post('/', async (c) => {
   const body = await parseJsonBody(c, chatBodySchema)
-  const data = await generateChatResponse(body.messages)
+  const data = await generateChatResponse(body.messages, body.setup_context ?? null)
   return success(c, data)
 })
 

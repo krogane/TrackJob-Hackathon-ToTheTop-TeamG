@@ -10,7 +10,7 @@ export const createProfileBodySchema = z.object({
 export const updateProfileBodySchema = z
   .object({
     display_name: z.string().min(1).max(50).optional(),
-    monthly_income: z.number().int().min(1).optional(),
+    monthly_income: z.number().int().min(0).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, 'at least one field is required')
 

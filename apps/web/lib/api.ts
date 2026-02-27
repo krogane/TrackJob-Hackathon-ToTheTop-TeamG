@@ -7,6 +7,7 @@ import type {
   BudgetSummary,
   ChatMessage,
   ChatResponse,
+  ChatSetupContext,
   ExpenseCategory,
   ExternalConnection,
   Goal,
@@ -382,10 +383,13 @@ export const adviceApi = {
 }
 
 export const chatApi = {
-  send: (messages: ChatMessage[]) =>
+  send: (messages: ChatMessage[], setupContext?: ChatSetupContext | null) =>
     apiRequest<ChatResponse>('/api/chat', {
       method: 'POST',
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({
+        messages,
+        ...(setupContext ? { setup_context: setupContext } : {}),
+      }),
     }),
 }
 

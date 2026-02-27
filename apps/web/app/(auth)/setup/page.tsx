@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import type { ChatSetupContext } from '@lifebalance/shared/types'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useChatWizard } from '@/hooks/useChatWizard'
 import { useToast } from '@/hooks/useToast'
-import { ApiError, authProfileApi } from '@/lib/api'
+import { ApiError, assumptionsApi, authProfileApi } from '@/lib/api'
 import { getSupabaseBrowserClient } from '@/lib/supabase'
 
 function AiAvatar() {
@@ -33,7 +34,117 @@ function AiAvatar() {
   )
 }
 
-type Step = 'checking' | 'name' | 'wizard'
+type Step = 'checking' | 'questions' | 'wizard'
+type SetupField = 'display_name' | 'age' | 'monthly_income' | 'housing_cost' | 'daily_food_cost' | 'current_savings'
+
+type SetupAnswers = {
+  display_name: string
+  age?: number
+  monthly_income?: number
+  housing_cost?: number
+  daily_food_cost?: number
+  current_savings?: number
+}
+
+type SetupQuestion = {
+  key: SetupField
+  title: string
+  description: string
+  placeholder: string
+  required: boolean
+  inputMode: 'text' | 'numeric'
+}
+
+const SETUP_QUESTIONS: SetupQuestion[] = [
+  {
+    key: 'display_name',
+    title: '表示名',
+    description: 'アプリ内で使う表示名を入力してください。',
+    placeholder: '例: 田中 太郎',
+    required: true,
+    inputMode: 'text',
+  },
+  {
+    key: 'age',
+    title: '年齢',
+    description: 'あなたの現在の年齢を入力してください。（任意）',
+    placeholder: '例: 30',
+    required: false,
+    inputMode: 'numeric',
+  },
+  {
+    key: 'monthly_income',
+    title: '月収（手取り額）',
+    description: 'あなたの現在の月収（手取り額）を入力してください。（任意）',
+    placeholder: '例: 140,000',
+    required: false,
+    inputMode: 'numeric',
+  },
+  {
+    key: 'housing_cost',
+    title: '月々の住居費（家賃・水道光熱費含む）',
+    description: 'あなたが現在支払っている家賃や水道光熱費を含めた住居費を入力してください。（任意）',
+    placeholder: '例: 80,000',
+    required: false,
+    inputMode: 'numeric',
+  },
+  {
+    key: 'daily_food_cost',
+    title: '1日の平均的な食費',
+    description: 'あなたが現在支払っている1日の平均的な食費を入力してください。（任意）',
+    placeholder: '例: 1,500',
+    required: false,
+    inputMode: 'numeric',
+  },
+  {
+    key: 'current_savings',
+    title: '現在の貯蓄額',
+    description: 'あなたの現在のおおまかな貯蓄額を入力してください。（任意）',
+    placeholder: '例: 120,000',
+    required: false,
+    inputMode: 'numeric',
+  },
+]
+
+const AMOUNT_FIELDS: SetupField[] = [
+  'monthly_income',
+  'housing_cost',
+  'daily_food_cost',
+  'current_savings',
+]
+
+function isAmountField(key: SetupField) {
+  return AMOUNT_FIELDS.includes(key)
+}
+
+function formatDigitsWithCommas(value: string) {
+  const digits = value.replace(/\D/g, '')
+  if (!digits) return ''
+  const normalized = digits.replace(/^0+(?=\d)/, '')
+  return normalized.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+function toDigitsOnly(value: string) {
+  return value.replace(/\D/g, '')
+}
+
+function formatAnswerValue(key: SetupField, answers: SetupAnswers) {
+  const value = answers[key]
+  if (value === undefined) return ''
+  if (key === 'display_name') return typeof value === 'string' ? value : ''
+  if (typeof value !== 'number') return ''
+  if (key === 'age') return String(value)
+  return formatDigitsWithCommas(String(value))
+}
+
+function buildSetupContext(answers: SetupAnswers): ChatSetupContext {
+  return {
+    ...(answers.monthly_income === undefined ? {} : { monthly_income: answers.monthly_income }),
+    ...(answers.current_savings === undefined ? {} : { current_savings: answers.current_savings }),
+    ...(answers.housing_cost === undefined ? {} : { housing_cost: answers.housing_cost }),
+    ...(answers.daily_food_cost === undefined ? {} : { daily_food_cost: answers.daily_food_cost }),
+  }
+}
 
 export default function SetupPage() {
   const router = useRouter()
@@ -42,11 +153,15 @@ export default function SetupPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const [step, setStep] = useState<Step>('checking')
-  const [displayName, setDisplayName] = useState('')
-  const [savingName, setSavingName] = useState(false)
-  const [nameError, setNameError] = useState('')
+  const [questionIndex, setQuestionIndex] = useState(0)
+  const [answers, setAnswers] = useState<SetupAnswers>({ display_name: '' })
+  const [inputValue, setInputValue] = useState('')
+  const [questionError, setQuestionError] = useState('')
+  const [savingSetup, setSavingSetup] = useState(false)
 
-  // 認証・セットアップ済みチェック
+  const currentQuestion = SETUP_QUESTIONS[questionIndex]
+  const isLastQuestion = questionIndex === SETUP_QUESTIONS.length - 1
+
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
     supabase.auth.getSession().then(async ({ data }) => {
@@ -54,6 +169,7 @@ export default function SetupPage() {
         router.replace('/login')
         return
       }
+
       try {
         const profile = await authProfileApi.get()
         if (profile.display_name !== '') {
@@ -66,16 +182,17 @@ export default function SetupPage() {
           return
         }
       }
-      setStep('name')
+
+      setStep('questions')
+      setQuestionIndex(0)
+      setInputValue('')
     })
   }, [router])
 
-  // チャットの自動スクロール
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [wizard.messages, wizard.loading])
 
-  // shouldAutoClose: 自動保存 → ダッシュボードへ
   useEffect(() => {
     if (!wizard.shouldAutoClose) return
 
@@ -100,18 +217,161 @@ export default function SetupPage() {
     [wizard.config, wizard.isComplete, wizard.saving],
   )
 
-  async function handleNameSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setNameError('')
-    setSavingName(true)
+  function handleQuestionInputChange(raw: string) {
+    if (!currentQuestion || currentQuestion.inputMode !== 'numeric') {
+      setInputValue(raw)
+      setQuestionError('')
+      return
+    }
+
+    const digitsOnly = toDigitsOnly(raw)
+
+    if (currentQuestion.key === 'age') {
+      setInputValue(digitsOnly)
+      setQuestionError('')
+      return
+    }
+
+    setInputValue(formatDigitsWithCommas(digitsOnly))
+    setQuestionError('')
+  }
+
+  function parseQuestionInput(question: SetupQuestion, raw: string) {
+    const trimmed = raw.trim()
+    if (question.key === 'display_name') {
+      if (!trimmed) {
+        return { ok: false, error: '表示名は必須です。' as const }
+      }
+      if (trimmed.length > 50) {
+        return { ok: false, error: '表示名は50文字以内で入力してください。' as const }
+      }
+      return { ok: true, value: trimmed }
+    }
+
+    if (!trimmed) {
+      return { ok: true, value: undefined }
+    }
+
+    if (question.key === 'age') {
+      if (!/^\d+$/.test(trimmed)) {
+        return { ok: false, error: '年齢は数字のみで入力してください。' as const }
+      }
+      const parsed = Number(trimmed)
+      if (!Number.isFinite(parsed) || parsed < 18 || parsed > 100) {
+        return { ok: false, error: '年齢は18〜100の範囲で入力してください。' as const }
+      }
+      return { ok: true, value: Math.round(parsed) }
+    }
+
+    const normalizedAmount = trimmed.replace(/,/g, '')
+    if (!/^\d+$/.test(normalizedAmount)) {
+      return { ok: false, error: '金額は数字のみで入力してください。' as const }
+    }
+
+    const amount = Number(normalizedAmount)
+    if (!Number.isFinite(amount)) {
+      return { ok: false, error: '金額が正しくありません。' as const }
+    }
+    return { ok: true, value: Math.max(0, Math.round(amount)) }
+  }
+
+  async function persistSetupData(nextAnswers: SetupAnswers) {
+    const profilePayload = {
+      display_name: nextAnswers.display_name,
+      ...(nextAnswers.monthly_income === undefined ? {} : { monthly_income: nextAnswers.monthly_income }),
+    }
+
     try {
-      await authProfileApi.update({ display_name: displayName })
+      await authProfileApi.update(profilePayload)
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 404) {
+        throw error
+      }
+
+      await authProfileApi.create({
+        display_name: nextAnswers.display_name,
+        ...(nextAnswers.monthly_income === undefined ? {} : { monthly_income: nextAnswers.monthly_income }),
+      })
+    }
+
+    if (nextAnswers.age !== undefined) {
+      const assumptions = await assumptionsApi.get()
+      await assumptionsApi.update({
+        age: nextAnswers.age,
+        annual_income_growth: assumptions.annual_income_growth,
+        investment_return: assumptions.investment_return,
+        inflation_rate: assumptions.inflation_rate,
+        monthly_investment: assumptions.monthly_investment,
+        simulation_trials: assumptions.simulation_trials,
+      })
+    }
+  }
+
+  function goToQuestion(nextIndex: number, nextAnswers: SetupAnswers) {
+    const question = SETUP_QUESTIONS[nextIndex]
+    setQuestionIndex(nextIndex)
+    setInputValue(formatAnswerValue(question.key, nextAnswers))
+    setQuestionError('')
+  }
+
+  async function completeQuestions(nextAnswers: SetupAnswers) {
+    setSavingSetup(true)
+    setQuestionError('')
+    try {
+      await persistSetupData(nextAnswers)
+      wizard.reset(buildSetupContext(nextAnswers))
       setStep('wizard')
     } catch {
-      setNameError('表示名の保存に失敗しました。もう一度お試しください。')
+      setQuestionError('初期情報の保存に失敗しました。時間をおいて再度お試しください。')
     } finally {
-      setSavingName(false)
+      setSavingSetup(false)
     }
+  }
+
+  async function handleQuestionSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!currentQuestion) return
+
+    const parsed = parseQuestionInput(currentQuestion, inputValue)
+    if (!parsed.ok) {
+      setQuestionError(parsed.error)
+      return
+    }
+
+    const nextAnswers: SetupAnswers = {
+      ...answers,
+      [currentQuestion.key]: parsed.value,
+    }
+    setAnswers(nextAnswers)
+
+    if (isLastQuestion) {
+      await completeQuestions(nextAnswers)
+      return
+    }
+
+    goToQuestion(questionIndex + 1, nextAnswers)
+  }
+
+  async function handleSkip() {
+    if (!currentQuestion || currentQuestion.required) return
+
+    const nextAnswers: SetupAnswers = {
+      ...answers,
+      [currentQuestion.key]: undefined,
+    }
+    setAnswers(nextAnswers)
+
+    if (isLastQuestion) {
+      await completeQuestions(nextAnswers)
+      return
+    }
+
+    goToQuestion(questionIndex + 1, nextAnswers)
+  }
+
+  function handleBack() {
+    if (questionIndex === 0) return
+    goToQuestion(questionIndex - 1, answers)
   }
 
   if (step === 'checking') {
@@ -122,32 +382,57 @@ export default function SetupPage() {
     )
   }
 
-  if (step === 'name') {
+  if (step === 'questions' && currentQuestion) {
+    const heading = questionIndex >= 1 && answers.display_name.trim()
+      ? `はじめまして、${answers.display_name}さん`
+      : 'はじめまして'
+
     return (
       <main className="flex min-h-screen items-center justify-center px-4">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-[0_10px_28px_rgba(35,55,95,0.06)]">
-          <h1 className="font-display text-2xl font-bold">はじめまして</h1>
-          <p className="mt-1 text-sm text-text2">アプリ内で使う表示名を入力してください。</p>
+          <h1 className="font-display text-2xl font-bold">{heading}</h1>
+          <p className="mt-1 text-sm text-text2">
+            {questionIndex + 1}/{SETUP_QUESTIONS.length}: {currentQuestion.description}
+          </p>
 
-          <form onSubmit={handleNameSubmit} className="mt-6 space-y-4">
+          <form onSubmit={(event) => void handleQuestionSubmit(event)} className="mt-6 space-y-4">
             <div>
-              <label className="text-xs text-text2" htmlFor="displayName">
-                表示名
+              <label className="text-xs text-text2" htmlFor={currentQuestion.key}>
+                {currentQuestion.title}
               </label>
               <Input
-                id="displayName"
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-                placeholder="例: 田中 太郎"
-                required
-                minLength={1}
-                maxLength={50}
+                id={currentQuestion.key}
+                value={inputValue}
+                onChange={(event) => handleQuestionInputChange(event.target.value)}
+                placeholder={currentQuestion.placeholder}
+                required={currentQuestion.required}
+                inputMode={currentQuestion.inputMode}
               />
             </div>
-            {nameError ? <p className="text-sm text-danger">{nameError}</p> : null}
-            <Button type="submit" className="w-full" disabled={savingName}>
-              {savingName ? '保存中...' : '次へ（初期設定へ）'}
-            </Button>
+
+            {questionError ? <p className="text-sm text-danger">{questionError}</p> : null}
+
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleBack}
+                disabled={questionIndex === 0 || savingSetup}
+              >
+                一つ戻る
+              </Button>
+
+              <div className="flex items-center gap-2">
+                {!currentQuestion.required ? (
+                  <Button type="button" variant="ghost" onClick={() => void handleSkip()} disabled={savingSetup}>
+                    スキップ
+                  </Button>
+                ) : null}
+                <Button type="submit" disabled={savingSetup}>
+                  {savingSetup ? '保存中...' : isLastQuestion ? '初期設定チャットへ進む' : '次へ'}
+                </Button>
+              </div>
+            </div>
           </form>
         </div>
       </main>
@@ -159,7 +444,7 @@ export default function SetupPage() {
       <div className="w-full max-w-2xl">
         <div className="mb-6">
           <h1 className="font-display text-2xl font-bold">初期設定</h1>
-          <p className="mt-1 text-sm text-text2">AIとの会話で月収・目標・予算を設定します。</p>
+          <p className="mt-1 text-sm text-text2">AIとの会話で目標・貯蓄目標・節約の意思を設定します。</p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-6 shadow-[0_10px_28px_rgba(35,55,95,0.06)]">
@@ -233,7 +518,7 @@ export default function SetupPage() {
           )}
 
           <div className="mt-4 flex justify-between">
-            <Button type="button" variant="ghost" onClick={() => wizard.reset()}>
+            <Button type="button" variant="ghost" onClick={() => wizard.reset(wizard.setupContext)}>
               やり直す
             </Button>
             <Button

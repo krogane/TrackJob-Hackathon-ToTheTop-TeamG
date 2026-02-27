@@ -84,14 +84,19 @@ const cases = [
     `{
       "monthly_income": 280000,
       "monthly_savings_target": 60000,
+      "current_savings": 1200000,
       "life_goals": [
         {
           "title": "マイホーム購入",
-          "icon": "🏠",
           "target_amount": 5000000,
-          "monthly_saving": 30000,
           "target_year": 2028,
           "priority": "高"
+        },
+        {
+          "title": "留学",
+          "target_amount": "unknown",
+          "target_year": "unknown",
+          "priority": "unknown"
         }
       ],
       "suggested_budgets": {

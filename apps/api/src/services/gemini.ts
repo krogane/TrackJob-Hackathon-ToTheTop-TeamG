@@ -3,7 +3,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { env } from '../lib/env'
 import { AppError } from '../lib/errors'
 
-const GEMINI_MODEL = 'gemini-2.5-flash-lite'
+export const GEMINI_CHAT_MODEL = 'gemini-3-flash-preview'
+export const GEMINI_BUDGET_MODEL = 'gemini-2.0-flash'
 const MAX_RETRIES = 2
 const BASE_RETRY_DELAY_MS = 400
 
@@ -68,9 +69,10 @@ async function withRetry<T>(operation: () => Promise<T>) {
 export async function generateGeminiText(params: {
   prompt: string
   systemInstruction?: string
+  model?: string
 }) {
   const model = getClient().getGenerativeModel({
-    model: GEMINI_MODEL,
+    model: params.model ?? GEMINI_CHAT_MODEL,
     systemInstruction: params.systemInstruction,
   })
 
@@ -85,9 +87,10 @@ export async function generateGeminiVisionText(params: {
   imageBase64: string
   mimeType: string
   systemInstruction?: string
+  model?: string
 }) {
   const model = getClient().getGenerativeModel({
-    model: GEMINI_MODEL,
+    model: params.model ?? GEMINI_CHAT_MODEL,
     systemInstruction: params.systemInstruction,
   })
 
@@ -108,6 +111,7 @@ export async function generateGeminiVisionText(params: {
 export async function generateGeminiChat(params: {
   systemInstruction: string
   history: Array<{ role: 'user' | 'model'; content: string }>
+  model?: string
 }) {
   const latestUserIndex = [...params.history]
     .reverse()
@@ -128,7 +132,7 @@ export async function generateGeminiChat(params: {
   }
 
   const model = getClient().getGenerativeModel({
-    model: GEMINI_MODEL,
+    model: params.model ?? GEMINI_CHAT_MODEL,
     systemInstruction: params.systemInstruction,
   })
 

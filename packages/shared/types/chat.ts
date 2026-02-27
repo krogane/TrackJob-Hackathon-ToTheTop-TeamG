@@ -3,13 +3,22 @@ export interface ChatMessage {
   content: string
 }
 
+export type ChatWizardGoalPriority = '高' | '中' | '低' | 'unknown'
+export type ChatWizardGoalAmount = number | 'unknown'
+export type ChatWizardGoalYear = number | 'unknown'
+
 export interface ChatWizardGoalConfig {
   title: string
-  icon: string
-  target_amount: number
-  monthly_saving: number
-  target_year: number
-  priority: '高' | '中' | '低'
+  target_amount: ChatWizardGoalAmount
+  target_year: ChatWizardGoalYear
+  priority: ChatWizardGoalPriority
+}
+
+export interface ChatSetupContext {
+  monthly_income?: number
+  current_savings?: number
+  housing_cost?: number
+  daily_food_cost?: number
 }
 
 export interface ChatWizardConfig {

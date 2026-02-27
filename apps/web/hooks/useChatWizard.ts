@@ -2,7 +2,12 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { ChatMessage, ChatWizardConfig } from '@lifebalance/shared/types'
+import type {
+  ChatMessage,
+  ChatSetupContext,
+  ChatWizardConfig,
+  ChatWizardGoalConfig,
+} from '@lifebalance/shared/types'
 
 import { ApiError, authProfileApi, budgetsApi, chatApi, goalsApi } from '@/lib/api'
 import { queryKeys } from '@/lib/query-keys'
@@ -23,15 +28,12 @@ type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number]
 type WizardMode = 'ai' | 'fallback'
 
 type FallbackDraft = {
-  monthly_income?: number
   event_title?: string
-  event_icon?: string
-  target_year?: number
-  target_amount?: number
-  current_savings?: number
-  rent_cost?: number
-  communication_cost?: number
+  target_year?: number | 'unknown'
+  target_amount?: number | 'unknown'
   monthly_savings_target?: number
+  saving_intent?: string
+  priority?: '高' | '中' | '低' | 'unknown'
 }
 
 type FallbackState = {
@@ -40,18 +42,16 @@ type FallbackState = {
 }
 
 const FALLBACK_QUESTIONS = [
-  '月収（手取り）を選んでください。1) 〜20万 2) 20〜30万 3) 30〜40万 4) 40万〜（金額入力も可）',
-  '最重要ライフイベントを選んでください。例: マイホーム / 結婚・育児 / FIRE / その他',
-  '目標年と目標金額を教えてください。例: 2029年 500万円',
-  '現在の貯蓄額を教えてください。例: 120万円',
-  '主な固定費（家賃・通信費）を教えてください。例: 家賃 8万円、通信費 1万円',
+  '最重要ライフイベントを教えてください。例: マイホーム / 結婚・育児 / FIRE / 留学',
+  '目標年と目標金額を教えてください。不明な場合は unknown と入力できます。例: 2030年 500万円',
   '月々の貯蓄目標額を教えてください。例: 6万円',
+  '節約の意思を教えてください。例: 強め / 普通 / ゆるく',
 ] as const
 
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
     role: 'model',
-    content: 'こんにちは。初期設定を進めます。まず、現在の月収（手取り）を教えてください。',
+    content: 'こんにちは。初期設定を進めます。最重要ライフイベントを教えてください。',
   },
 ]
 
@@ -60,12 +60,38 @@ const INITIAL_FALLBACK_STATE: FallbackState = {
   draft: {},
 }
 
+const FINISH_PHRASE = 'これで記録を終了します'
+
 function getCurrentYearMonth() {
   return new Date().toISOString().slice(0, 7)
 }
 
 function getCurrentYear() {
   return new Date().getUTCFullYear()
+}
+
+function toNonNegativeInt(value: unknown) {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(parsed)) {
+    return null
+  }
+  return Math.max(0, Math.round(parsed))
+}
+
+function normalizeSetupContext(setupContext: ChatSetupContext | null): ChatSetupContext | null {
+  if (!setupContext) return null
+
+  const monthlyIncome = toNonNegativeInt(setupContext.monthly_income)
+  const currentSavings = toNonNegativeInt(setupContext.current_savings)
+  const housingCost = toNonNegativeInt(setupContext.housing_cost)
+  const dailyFoodCost = toNonNegativeInt(setupContext.daily_food_cost)
+
+  return {
+    ...(monthlyIncome === null ? {} : { monthly_income: monthlyIncome }),
+    ...(currentSavings === null ? {} : { current_savings: currentSavings }),
+    ...(housingCost === null ? {} : { housing_cost: housingCost }),
+    ...(dailyFoodCost === null ? {} : { daily_food_cost: dailyFoodCost }),
+  }
 }
 
 function parseAmount(value: string, preferManWhenSmall = false) {
@@ -92,53 +118,6 @@ function parseAmount(value: string, preferManWhenSmall = false) {
   return Math.round(parsed)
 }
 
-function parseIncomeInput(value: string) {
-  const normalized = value.replace(/\s/g, '').toLowerCase()
-
-  if (
-    normalized === '1' ||
-    normalized === '①' ||
-    normalized.includes('〜20万') ||
-    normalized.includes('~20万') ||
-    normalized.includes('20万以下') ||
-    normalized.includes('20万まで')
-  ) {
-    return 200000
-  }
-
-  if (
-    normalized === '2' ||
-    normalized === '②' ||
-    normalized.includes('20〜30万') ||
-    normalized.includes('20~30万') ||
-    normalized.includes('20-30万')
-  ) {
-    return 250000
-  }
-
-  if (
-    normalized === '3' ||
-    normalized === '③' ||
-    normalized.includes('30〜40万') ||
-    normalized.includes('30~40万') ||
-    normalized.includes('30-40万')
-  ) {
-    return 350000
-  }
-
-  if (
-    normalized === '4' ||
-    normalized === '④' ||
-    normalized.includes('40万〜') ||
-    normalized.includes('40万~') ||
-    normalized.includes('40万以上')
-  ) {
-    return 450000
-  }
-
-  return parseAmount(value, true)
-}
-
 function parseTargetYear(value: string) {
   const absoluteYear = value.match(/\b(20[2-9][0-9])\b/)
   if (absoluteYear?.[1]) {
@@ -153,98 +132,119 @@ function parseTargetYear(value: string) {
   return null
 }
 
-function extractEvent(input: string) {
-  const normalized = input.toLowerCase()
-
-  if (input.includes('マイホーム') || input.includes('住宅') || input.includes('家')) {
-    return { title: 'マイホーム購入', icon: '🏠' }
-  }
-  if (input.includes('結婚') || input.includes('育児') || input.includes('子')) {
-    return { title: '結婚・育児準備', icon: '👶' }
-  }
-  if (normalized.includes('fire')) {
-    return { title: 'FIRE達成', icon: '🔥' }
-  }
-  if (input.includes('その他')) {
-    return { title: 'その他ライフイベント', icon: '🌟' }
-  }
-
-  const trimmed = input.trim()
-  if (!trimmed) {
-    return null
-  }
-
-  return {
-    title: trimmed.slice(0, 30),
-    icon: '🌟',
-  }
+function parseUnknown(value: string) {
+  const normalized = value.trim().toLowerCase()
+  return normalized.includes('unknown') || normalized.includes('不明') || normalized.includes('未定')
 }
 
-function buildSuggestedBudgets(draft: Required<Pick<FallbackDraft, 'monthly_income' | 'monthly_savings_target' | 'rent_cost' | 'communication_cost'>>) {
-  const remaining = Math.max(
-    0,
-    draft.monthly_income - draft.monthly_savings_target - draft.rent_cost - draft.communication_cost,
-  )
+function resolvePriorityFromIntent(intent: string): '高' | '中' | '低' | 'unknown' {
+  const normalized = intent.trim().toLowerCase()
+  if (!normalized) return 'unknown'
 
-  const variableWeights: Record<Exclude<ExpenseCategory, 'housing' | 'communication'>, number> = {
-    food: 0.32,
-    transport: 0.12,
-    entertainment: 0.16,
-    clothing: 0.1,
-    medical: 0.08,
-    social: 0.12,
-    other: 0.1,
+  if (
+    normalized.includes('強') ||
+    normalized.includes('本気') ||
+    normalized.includes('かなり') ||
+    normalized.includes('徹底')
+  ) {
+    return '高'
+  }
+
+  if (normalized.includes('ゆる') || normalized.includes('弱') || normalized.includes('ほどほど')) {
+    return '低'
+  }
+
+  if (normalized.includes('普通') || normalized.includes('中') || normalized.includes('バランス')) {
+    return '中'
+  }
+
+  return 'unknown'
+}
+
+function buildSuggestedBudgets(
+  setupContext: ChatSetupContext | null,
+  monthlyIncome: number,
+  monthlySavingsTarget: number,
+) {
+  const housingCost = setupContext?.housing_cost
+  const dailyFoodCost = setupContext?.daily_food_cost
+
+  const housing = housingCost !== undefined
+    ? Math.max(0, Math.round(housingCost))
+    : monthlyIncome > 0
+      ? Math.round(monthlyIncome * 0.25)
+      : 0
+
+  const food = dailyFoodCost !== undefined
+    ? Math.max(0, Math.round(dailyFoodCost * 30))
+    : monthlyIncome > 0
+      ? Math.round(monthlyIncome * 0.12)
+      : 0
+
+  const spendingUpperBound = monthlyIncome > 0 ? Math.max(0, monthlyIncome - monthlySavingsTarget) : 0
+  const remaining = Math.max(0, spendingUpperBound - housing - food)
+
+  const variableWeights: Record<Exclude<ExpenseCategory, 'housing' | 'food'>, number> = {
+    transport: 0.14,
+    entertainment: 0.18,
+    clothing: 0.12,
+    communication: 0.14,
+    medical: 0.1,
+    social: 0.16,
+    other: 0.16,
   }
 
   const suggested: Record<ExpenseCategory, number> = {
-    housing: Math.max(0, Math.round(draft.rent_cost)),
-    communication: Math.max(0, Math.round(draft.communication_cost)),
-    food: 0,
+    housing,
+    food,
     transport: 0,
     entertainment: 0,
     clothing: 0,
+    communication: 0,
     medical: 0,
     social: 0,
     other: 0,
   }
 
-  for (const [category, weight] of Object.entries(variableWeights) as Array<[Exclude<ExpenseCategory, 'housing' | 'communication'>, number]>) {
+  for (const [category, weight] of Object.entries(variableWeights) as Array<
+    [Exclude<ExpenseCategory, 'housing' | 'food'>, number]
+  >) {
     suggested[category] = Math.max(0, Math.round(remaining * weight))
   }
 
   return suggested
 }
 
-function buildConfigFromDraft(draft: Required<FallbackDraft>): ChatWizardConfig {
-  const monthsToGoal = Math.max(1, (draft.target_year - getCurrentYear()) * 12)
-  const remainingGoalAmount = Math.max(0, draft.target_amount - draft.current_savings)
-  const requiredMonthlySaving = Math.ceil(remainingGoalAmount / monthsToGoal)
-  const goalMonthlySaving = Math.max(requiredMonthlySaving, Math.round(draft.monthly_savings_target * 0.7))
+function buildConfigFromDraft(
+  draft: Required<Pick<FallbackDraft, 'event_title' | 'target_year' | 'target_amount' | 'monthly_savings_target' | 'priority'>>,
+  setupContext: ChatSetupContext | null,
+): ChatWizardConfig {
+  const monthlyIncomeValue = setupContext?.monthly_income
+  const currentSavingsValue = setupContext?.current_savings
+  const monthlyIncome = monthlyIncomeValue !== undefined ? Math.max(0, Math.round(monthlyIncomeValue)) : 0
+  const currentSavings = currentSavingsValue !== undefined ? Math.max(0, Math.round(currentSavingsValue)) : undefined
 
   return {
-    monthly_income: draft.monthly_income,
-    monthly_savings_target: draft.monthly_savings_target,
-    current_savings: draft.current_savings,
+    monthly_income: monthlyIncome,
+    monthly_savings_target: Math.max(0, Math.round(draft.monthly_savings_target)),
+    ...(currentSavings === undefined ? {} : { current_savings: currentSavings }),
     life_goals: [
       {
         title: draft.event_title,
-        icon: draft.event_icon,
         target_amount: draft.target_amount,
-        monthly_saving: goalMonthlySaving,
         target_year: draft.target_year,
-        priority: '高',
+        priority: draft.priority,
       },
     ],
-    suggested_budgets: buildSuggestedBudgets({
-      monthly_income: draft.monthly_income,
-      monthly_savings_target: draft.monthly_savings_target,
-      rent_cost: draft.rent_cost,
-      communication_cost: draft.communication_cost,
-    }),
+    suggested_budgets: buildSuggestedBudgets(
+      setupContext,
+      monthlyIncome,
+      Math.max(0, Math.round(draft.monthly_savings_target)),
+    ),
   }
 }
 
-function resolveFallbackTurn(state: FallbackState, input: string) {
+function resolveFallbackTurn(state: FallbackState, input: string, setupContext: ChatSetupContext | null) {
   const trimmed = input.trim()
   const nextState: FallbackState = {
     step: state.step,
@@ -253,82 +253,39 @@ function resolveFallbackTurn(state: FallbackState, input: string) {
 
   switch (state.step) {
     case 0: {
-      const monthlyIncome = parseIncomeInput(trimmed)
-      if (!monthlyIncome) {
+      if (!trimmed) {
         return {
           nextState: state,
-          assistantMessage: '月収を読み取れませんでした。1〜4の選択肢、または金額（例: 28万円）で入力してください。',
+          assistantMessage: 'ライフイベントを読み取れませんでした。例: マイホーム / 結婚・育児 / FIRE / 留学',
           completedConfig: null,
         }
       }
-      nextState.draft.monthly_income = monthlyIncome
+      nextState.draft.event_title = trimmed.slice(0, 50)
       nextState.step = 1
       break
     }
     case 1: {
-      const event = extractEvent(trimmed)
-      if (!event) {
-        return {
-          nextState: state,
-          assistantMessage: 'ライフイベントを読み取れませんでした。例: マイホーム / 結婚・育児 / FIRE / その他',
-          completedConfig: null,
-        }
-      }
-      nextState.draft.event_title = event.title
-      nextState.draft.event_icon = event.icon
-      nextState.step = 2
-      break
-    }
-    case 2: {
-      const targetYear = parseTargetYear(trimmed)
-      const amountSource = targetYear ? trimmed.replace(String(targetYear), '') : trimmed
-      const targetAmount = parseAmount(amountSource, true)
+      const hasUnknown = parseUnknown(trimmed)
+      const targetYearFromText = parseTargetYear(trimmed)
+      const targetAmountFromText = parseAmount(trimmed, true)
 
-      if (!targetYear || !targetAmount) {
+      const targetYear = targetYearFromText ?? (hasUnknown ? 'unknown' : null)
+      const targetAmount = targetAmountFromText ?? (hasUnknown ? 'unknown' : null)
+
+      if (targetYear === null || targetAmount === null) {
         return {
           nextState: state,
-          assistantMessage: '目標年と目標金額を読み取れませんでした。例: 2029年 500万円',
+          assistantMessage: '目標年と目標金額を読み取れませんでした。例: 2030年 500万円 / unknown',
           completedConfig: null,
         }
       }
 
       nextState.draft.target_year = targetYear
       nextState.draft.target_amount = targetAmount
-      nextState.step = 3
+      nextState.step = 2
       break
     }
-    case 3: {
-      const currentSavings = parseAmount(trimmed, true)
-      if (currentSavings === null) {
-        return {
-          nextState: state,
-          assistantMessage: '現在の貯蓄額を読み取れませんでした。例: 120万円',
-          completedConfig: null,
-        }
-      }
-      nextState.draft.current_savings = currentSavings
-      nextState.step = 4
-      break
-    }
-    case 4: {
-      const values = trimmed.match(/[0-9][0-9,]*(?:\.[0-9]+)?\s*万?|[0-9][0-9,]*/g) ?? []
-      const first = values[0] ? parseAmount(values[0], true) : null
-      const second = values[1] ? parseAmount(values[1], true) : null
-
-      if (first === null || second === null) {
-        return {
-          nextState: state,
-          assistantMessage: '固定費は2つ必要です。例: 家賃 8万円、通信費 1万円',
-          completedConfig: null,
-        }
-      }
-
-      nextState.draft.rent_cost = first
-      nextState.draft.communication_cost = second
-      nextState.step = 5
-      break
-    }
-    case 5: {
+    case 2: {
       const monthlySavingsTarget = parseAmount(trimmed, true)
       if (monthlySavingsTarget === null) {
         return {
@@ -338,18 +295,28 @@ function resolveFallbackTurn(state: FallbackState, input: string) {
         }
       }
       nextState.draft.monthly_savings_target = monthlySavingsTarget
+      nextState.step = 3
+      break
+    }
+    case 3: {
+      const savingIntent = trimmed
+      if (!savingIntent) {
+        return {
+          nextState: state,
+          assistantMessage: '節約の意思を読み取れませんでした。例: 強め / 普通 / ゆるく',
+          completedConfig: null,
+        }
+      }
+      nextState.draft.saving_intent = savingIntent
+      nextState.draft.priority = resolvePriorityFromIntent(savingIntent)
 
       const draft = nextState.draft
       const ready =
-        draft.monthly_income !== undefined &&
         draft.event_title !== undefined &&
-        draft.event_icon !== undefined &&
         draft.target_year !== undefined &&
         draft.target_amount !== undefined &&
-        draft.current_savings !== undefined &&
-        draft.rent_cost !== undefined &&
-        draft.communication_cost !== undefined &&
-        draft.monthly_savings_target !== undefined
+        draft.monthly_savings_target !== undefined &&
+        draft.priority !== undefined
 
       if (!ready) {
         return {
@@ -360,9 +327,18 @@ function resolveFallbackTurn(state: FallbackState, input: string) {
       }
 
       return {
-        nextState: nextState,
+        nextState,
         assistantMessage: 'ヒアリングが完了しました。設定内容を確認して「保存する」を押してください。',
-        completedConfig: buildConfigFromDraft(draft as Required<FallbackDraft>),
+        completedConfig: buildConfigFromDraft(
+          {
+            event_title: draft.event_title,
+            target_year: draft.target_year,
+            target_amount: draft.target_amount,
+            monthly_savings_target: draft.monthly_savings_target,
+            priority: draft.priority,
+          },
+          setupContext,
+        ),
       }
     }
     default:
@@ -380,7 +356,20 @@ function resolveFallbackTurn(state: FallbackState, input: string) {
   }
 }
 
-const FINISH_PHRASE = 'これで記録を終了します'
+function isPersistableGoal(goal: ChatWizardGoalConfig): goal is {
+  title: string
+  target_amount: number
+  target_year: number
+  priority: '高' | '中' | '低'
+} {
+  return (
+    typeof goal.target_amount === 'number' &&
+    Number.isFinite(goal.target_amount) &&
+    typeof goal.target_year === 'number' &&
+    Number.isFinite(goal.target_year) &&
+    goal.priority !== 'unknown'
+  )
+}
 
 export function useChatWizard() {
   const queryClient = useQueryClient()
@@ -394,6 +383,7 @@ export function useChatWizard() {
   const [mode, setMode] = useState<WizardMode>('ai')
   const [fallbackState, setFallbackState] = useState<FallbackState>(INITIAL_FALLBACK_STATE)
   const [shouldAutoClose, setShouldAutoClose] = useState(false)
+  const [setupContext, setSetupContext] = useState<ChatSetupContext | null>(null)
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading && !isComplete, [input, loading, isComplete])
 
@@ -416,7 +406,7 @@ export function useChatWizard() {
 
     try {
       if (mode === 'fallback') {
-        const turn = resolveFallbackTurn(fallbackState, trimmed)
+        const turn = resolveFallbackTurn(fallbackState, trimmed, setupContext)
         setFallbackState(turn.nextState)
         setMessages((prev) => [...prev, { role: 'model', content: turn.assistantMessage }])
         if (turn.completedConfig) {
@@ -426,7 +416,7 @@ export function useChatWizard() {
         return
       }
 
-      const response = await chatApi.send(nextMessages)
+      const response = await chatApi.send(nextMessages, setupContext)
       setMessages((prev) => [
         ...prev,
         {
@@ -444,7 +434,7 @@ export function useChatWizard() {
         setConfig(response.config)
       }
     } catch (sendError) {
-      const fallbackTurn = resolveFallbackTurn(fallbackState, trimmed)
+      const fallbackTurn = resolveFallbackTurn(fallbackState, trimmed, setupContext)
       setMode('fallback')
       setFallbackState(fallbackTurn.nextState)
 
@@ -466,7 +456,7 @@ export function useChatWizard() {
     } finally {
       setLoading(false)
     }
-  }, [canSend, fallbackState, input, messages, mode])
+  }, [canSend, fallbackState, input, messages, mode, setupContext])
 
   const saveConfig = useCallback(async () => {
     if (!config || saving) {
@@ -484,13 +474,17 @@ export function useChatWizard() {
     }
 
     try {
-      const profilePayload = {
-        monthly_income: config.monthly_income,
-      }
+      const monthlyIncome = toNonNegativeInt(config.monthly_income)
+      const profilePayload =
+        monthlyIncome !== null && monthlyIncome > 0
+          ? { monthly_income: monthlyIncome }
+          : {}
+
       try {
-        await authProfileApi.update(profilePayload)
+        if (Object.keys(profilePayload).length > 0) {
+          await authProfileApi.update(profilePayload)
+        }
       } catch (updateError) {
-        // プロフィールが存在しない場合（メール確認後の初回ログインなど）は新規作成にフォールバック
         if (updateError instanceof ApiError && updateError.status === 404) {
           let displayName = 'ユーザー'
           try {
@@ -501,7 +495,10 @@ export function useChatWizard() {
               localStorage.removeItem('lifebalance:pending-profile')
             }
           } catch {}
-          const createPayload = { display_name: displayName, monthly_income: config.monthly_income }
+          const createPayload = {
+            display_name: displayName,
+            ...(monthlyIncome !== null && monthlyIncome > 0 ? { monthly_income: monthlyIncome } : {}),
+          }
           try {
             await authProfileApi.create(createPayload)
           } catch (createError) {
@@ -512,13 +509,23 @@ export function useChatWizard() {
         }
       }
 
+      const validGoals = config.life_goals.filter(isPersistableGoal)
+      const monthlySavingPerGoal = validGoals.length > 0
+        ? Math.max(0, Math.round(config.monthly_savings_target / validGoals.length))
+        : 0
+      const savedAmount = Math.max(0, Math.round(config.current_savings ?? 0))
+
       for (const goal of config.life_goals) {
+        if (!isPersistableGoal(goal)) {
+          warnSkippedSave('goal', goal, 'contains unknown fields')
+          continue
+        }
+
         const goalPayload = {
           title: goal.title,
-          icon: goal.icon,
           target_amount: goal.target_amount,
-          saved_amount: Math.max(0, Math.round(config.current_savings ?? 0)),
-          monthly_saving: goal.monthly_saving,
+          saved_amount: savedAmount,
+          monthly_saving: monthlySavingPerGoal,
           target_year: goal.target_year,
           priority: goal.priority,
         } as const
@@ -558,13 +565,13 @@ export function useChatWizard() {
     }
 
     if (!persisted) {
-      setError('一部の設定はAPI未接続のため保存をスキップしました。コンソールログを確認してください。')
+      setError('一部の設定は保存をスキップしました。コンソールログを確認してください。')
     }
 
     return { persisted }
   }, [config, saving, queryClient])
 
-  const reset = useCallback(() => {
+  const reset = useCallback((nextSetupContext?: ChatSetupContext | null) => {
     setMessages(INITIAL_MESSAGES)
     setInput('')
     setLoading(false)
@@ -575,6 +582,9 @@ export function useChatWizard() {
     setMode('ai')
     setFallbackState(INITIAL_FALLBACK_STATE)
     setShouldAutoClose(false)
+    if (nextSetupContext !== undefined) {
+      setSetupContext(normalizeSetupContext(nextSetupContext))
+    }
   }, [])
 
   return {
@@ -588,6 +598,7 @@ export function useChatWizard() {
     isComplete,
     canSend,
     shouldAutoClose,
+    setupContext,
     setInput,
     send,
     saveConfig,

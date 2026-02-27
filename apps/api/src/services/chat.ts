@@ -1,235 +1,468 @@
-import type { ChatMessage, ChatResponse } from '@lifebalance/shared/types'
+import type {
+  ChatMessage,
+  ChatResponse,
+  ChatSetupContext,
+  ChatWizardConfig,
+} from '@lifebalance/shared/types'
 
-import { extractFirstJsonObject, generateGeminiChat, generateGeminiText } from './gemini'
+import {
+  GEMINI_BUDGET_MODEL,
+  extractFirstJsonObject,
+  generateGeminiChat,
+  generateGeminiText,
+} from './gemini'
 import { getChatSystemPrompt } from './prompts/chat'
-import { chatConfigSchema } from '../schemas/chat'
+import { chatExtractedConfigSchema } from '../schemas/chat'
 
-// Phrases that indicate the AI has finished collecting all required info.
-// Keep broad enough to catch formal/casual variants Gemini might generate.
-const COMPLETION_INDICATORS = [
-  '設定は完了',
-  '設定が完了',
-  '設定を完了',
-  '設定完了',
-  '設定の完了',
-  '完了です',
-  '完了しました',
-  '完了いたしました',
-  '完了させていただきました',
-  '保存してください',
-  '保存いたしました',
-  '設定内容をまとめました',
-  '設定内容を確認',
-  '同意いただけた',
-  'ご同意いただき',
-  'ご同意ありがとう',
-  '同意ありがとうございます',
-]
+const BUDGET_CATEGORIES = [
+  'housing',
+  'food',
+  'transport',
+  'entertainment',
+  'clothing',
+  'communication',
+  'medical',
+  'social',
+  'other',
+] as const
 
-function isCompletionResponse(content: string): boolean {
-  return COMPLETION_INDICATORS.some((phrase) => content.includes(phrase))
+type BudgetCategory = (typeof BUDGET_CATEGORIES)[number]
+type BudgetRecord = Record<BudgetCategory, number>
+type ChatExtractedConfig = Pick<ChatWizardConfig, 'monthly_savings_target' | 'life_goals'>
+
+function toNonNegativeInt(value: unknown) {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(parsed)) return null
+  return Math.max(0, Math.round(parsed))
 }
 
-function extractConfigTag(content: string) {
-  const match = content.match(/<CONFIG>([\s\S]*?)<\/CONFIG>/i)
+function extractSetupCompleteTag(content: string) {
+  const match = content.match(/<SETUP_COMPLETE\s*\/>/i)
   if (!match) {
     return {
-      configText: null,
+      hasSetupCompleteTag: false,
       cleanedContent: content.trim(),
     }
   }
 
-  // Gemini may wrap JSON in code fences inside the CONFIG tag
-  let configText = match[1]?.trim() ?? null
-  if (configText) {
-    configText = configText
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/```\s*$/i, '')
-      .trim()
-  }
-
-  // Replace the raw CONFIG tag with a formatted JSON code block so the
-  // conversational message is never left truncated (e.g. when the user
-  // asks the AI to show the config after setup is complete).
-  const displayBlock = configText ? `\`\`\`json\n${configText}\n\`\`\`` : ''
-
   return {
-    configText,
-    cleanedContent: content.replace(match[0], displayBlock).trim(),
+    hasSetupCompleteTag: true,
+    cleanedContent: content.replace(match[0], '').trim(),
   }
 }
 
-/**
- * Normalizes AI-generated config values before schema validation.
- * Rounds all amounts to integers since Gemini may return floats.
- * Clamps target_year to the current year if the AI returns a past year.
- */
-function normalizeConfigData(raw: unknown): unknown {
+function normalizeUnknownString(value: string) {
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'unknown' || normalized === '不明' || normalized === '未定') {
+    return 'unknown' as const
+  }
+  return value
+}
+
+function normalizePriority(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  const normalized = value.trim().toLowerCase()
+
+  if (value === '高' || normalized === 'high') return '高'
+  if (value === '中' || normalized === 'medium' || normalized === 'mid') return '中'
+  if (value === '低' || normalized === 'low') return '低'
+  if (normalized === 'unknown' || normalized === '不明' || normalized === '未定') return 'unknown'
+
+  return value
+}
+
+function normalizeSetupContext(setupContext: ChatSetupContext | null): ChatSetupContext | null {
+  if (!setupContext) return null
+
+  const monthlyIncome = toNonNegativeInt(setupContext.monthly_income)
+  const currentSavings = toNonNegativeInt(setupContext.current_savings)
+  const housingCost = toNonNegativeInt(setupContext.housing_cost)
+  const dailyFoodCost = toNonNegativeInt(setupContext.daily_food_cost)
+
+  return {
+    ...(monthlyIncome === null ? {} : { monthly_income: monthlyIncome }),
+    ...(currentSavings === null ? {} : { current_savings: currentSavings }),
+    ...(housingCost === null ? {} : { housing_cost: housingCost }),
+    ...(dailyFoodCost === null ? {} : { daily_food_cost: dailyFoodCost }),
+  }
+}
+
+function normalizeExtractedConfigData(raw: unknown): unknown {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw
   const obj = { ...(raw as Record<string, unknown>) }
   const currentYear = new Date().getUTCFullYear()
 
-  if (typeof obj.monthly_income === 'number') {
-    obj.monthly_income = Math.round(obj.monthly_income)
-  }
   if (typeof obj.monthly_savings_target === 'number') {
     obj.monthly_savings_target = Math.round(obj.monthly_savings_target)
-  }
-  if (typeof obj.current_savings === 'number') {
-    obj.current_savings = Math.max(0, Math.round(obj.current_savings))
   }
 
   if (Array.isArray(obj.life_goals)) {
     obj.life_goals = obj.life_goals.map((goal: unknown) => {
       if (!goal || typeof goal !== 'object' || Array.isArray(goal)) return goal
       const g = { ...(goal as Record<string, unknown>) }
-      if (typeof g.target_amount === 'number') g.target_amount = Math.round(g.target_amount)
-      if (typeof g.monthly_saving === 'number') g.monthly_saving = Math.round(g.monthly_saving)
-      // Clamp to currentYear: AI sometimes miscalculates (e.g. returns 2025 when it should be ≥2026)
-      if (typeof g.target_year === 'number') g.target_year = Math.max(Math.round(g.target_year), currentYear)
+
+      if (typeof g.target_amount === 'number') {
+        g.target_amount = Math.round(g.target_amount)
+      } else if (typeof g.target_amount === 'string') {
+        g.target_amount = normalizeUnknownString(g.target_amount)
+      }
+
+      if (typeof g.target_year === 'number') {
+        g.target_year = Math.max(Math.round(g.target_year), currentYear)
+      } else if (typeof g.target_year === 'string') {
+        g.target_year = normalizeUnknownString(g.target_year)
+      }
+
+      g.priority = normalizePriority(g.priority)
+
       return g
     })
-  }
-
-  if (obj.suggested_budgets && typeof obj.suggested_budgets === 'object' && !Array.isArray(obj.suggested_budgets)) {
-    obj.suggested_budgets = Object.fromEntries(
-      Object.entries(obj.suggested_budgets as Record<string, unknown>).map(([k, v]) => [
-        k,
-        typeof v === 'number' ? Math.round(v) : v,
-      ]),
-    )
   }
 
   return obj
 }
 
-function parseConfig(content: string) {
+function parseExtractedConfig(content: string): ChatExtractedConfig | null {
   try {
     const parsedJson = JSON.parse(content) as unknown
-    const normalized = normalizeConfigData(parsedJson)
-    const parsed = chatConfigSchema.safeParse(normalized)
+    const normalized = normalizeExtractedConfigData(parsedJson)
+    const parsed = chatExtractedConfigSchema.safeParse(normalized)
     if (!parsed.success) {
-      console.warn('[chat] CONFIG validation failed:', JSON.stringify(parsed.error.issues))
+      console.warn('[chat] extracted CONFIG validation failed:', JSON.stringify(parsed.error.issues))
     }
     return parsed.success ? parsed.data : null
   } catch (err) {
-    console.warn('[chat] CONFIG JSON parse error:', err)
+    console.warn('[chat] extracted CONFIG JSON parse error:', err)
     return null
   }
 }
 
-/**
- * When the chat AI indicates completion but doesn't output a <CONFIG> tag,
- * make a separate extraction-only call to Gemini to get the structured JSON.
- */
-async function extractConfigFromHistory(messages: ChatMessage[]) {
-  const currentYear = new Date().getUTCFullYear()
+function getSetupMonthlyFoodCost(setupContext: ChatSetupContext | null) {
+  const dailyFoodCost = setupContext?.daily_food_cost
+  if (dailyFoodCost === undefined) {
+    return null
+  }
+  return Math.max(0, Math.round(dailyFoodCost * 30))
+}
+
+function createEmptyBudgets(): BudgetRecord {
+  return {
+    housing: 0,
+    food: 0,
+    transport: 0,
+    entertainment: 0,
+    clothing: 0,
+    communication: 0,
+    medical: 0,
+    social: 0,
+    other: 0,
+  }
+}
+
+function sanitizeBudgetObject(raw: unknown): Partial<BudgetRecord> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return {}
+  }
+
+  const record = raw as Record<string, unknown>
+  const next: Partial<BudgetRecord> = {}
+
+  for (const category of BUDGET_CATEGORIES) {
+    const value = record[category]
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      continue
+    }
+    next[category] = Math.max(0, Math.round(value))
+  }
+
+  return next
+}
+
+function fitBudgetsToCapacity(
+  budgets: BudgetRecord,
+  monthlyIncome: number,
+  monthlySavingsTarget: number,
+  lockedCategories: BudgetCategory[],
+) {
+  if (monthlyIncome <= 0) return budgets
+
+  const maxSpending = Math.max(0, monthlyIncome - monthlySavingsTarget)
+  const total = BUDGET_CATEGORIES.reduce((sum, category) => sum + budgets[category], 0)
+  if (total <= maxSpending) return budgets
+
+  const locked = new Set(lockedCategories)
+  const lockedTotal = BUDGET_CATEGORIES.reduce(
+    (sum, category) => (locked.has(category) ? sum + budgets[category] : sum),
+    0,
+  )
+  const availableForFlexible = Math.max(0, maxSpending - lockedTotal)
+
+  const flexibleCategories = BUDGET_CATEGORIES.filter((category) => !locked.has(category))
+  const flexibleTotal = flexibleCategories.reduce((sum, category) => sum + budgets[category], 0)
+  if (flexibleTotal <= 0) return budgets
+
+  const scaled = { ...budgets }
+  const scale = availableForFlexible / flexibleTotal
+  for (const category of flexibleCategories) {
+    scaled[category] = Math.max(0, Math.round(scaled[category] * scale))
+  }
+  return scaled
+}
+
+function buildFallbackBudgets(config: ChatWizardConfig, setupContext: ChatSetupContext | null): BudgetRecord {
+  const monthlyIncome = Math.max(0, Math.round(config.monthly_income))
+  const monthlySavingsTarget = Math.max(0, Math.round(config.monthly_savings_target))
+  const housingCost = setupContext?.housing_cost
+
+  const housing = housingCost !== undefined
+    ? Math.max(0, Math.round(housingCost))
+    : monthlyIncome > 0
+      ? Math.round(monthlyIncome * 0.25)
+      : 0
+
+  const food = getSetupMonthlyFoodCost(setupContext) ?? (monthlyIncome > 0 ? Math.round(monthlyIncome * 0.12) : 0)
+
+  const spendingUpperBound = monthlyIncome > 0 ? Math.max(0, monthlyIncome - monthlySavingsTarget) : 0
+  const remaining = Math.max(0, spendingUpperBound - housing - food)
+
+  const variableWeights: Record<Exclude<BudgetCategory, 'housing' | 'food'>, number> = {
+    transport: 0.14,
+    entertainment: 0.18,
+    clothing: 0.12,
+    communication: 0.14,
+    medical: 0.1,
+    social: 0.16,
+    other: 0.16,
+  }
+
+  const budgets: BudgetRecord = {
+    housing,
+    food,
+    transport: 0,
+    entertainment: 0,
+    clothing: 0,
+    communication: 0,
+    medical: 0,
+    social: 0,
+    other: 0,
+  }
+
+  for (const [category, weight] of Object.entries(variableWeights) as Array<
+    [Exclude<BudgetCategory, 'housing' | 'food'>, number]
+  >) {
+    budgets[category] = Math.max(0, Math.round(remaining * weight))
+  }
+
+  return fitBudgetsToCapacity(budgets, monthlyIncome, monthlySavingsTarget, ['housing', 'food'])
+}
+
+async function generateSuggestedBudgetsWithLLM(
+  config: ChatWizardConfig,
+  setupContext: ChatSetupContext | null,
+  messages: ChatMessage[],
+) {
+  const fallbackBudgets = buildFallbackBudgets(config, setupContext)
+  const monthlyIncome = Math.max(0, Math.round(config.monthly_income))
+  const monthlySavingsTarget = Math.max(0, Math.round(config.monthly_savings_target))
+  const setupHousingCost = setupContext?.housing_cost
+  const housingCost = setupHousingCost !== undefined
+    ? Math.max(0, Math.round(setupHousingCost))
+    : null
+  const monthlyFoodCost = getSetupMonthlyFoodCost(setupContext)
+
   const conversationText = messages
-    .map((m) => `${m.role === 'user' ? 'ユーザー' : 'AI'}: ${m.content}`)
+    .map((message) => `${message.role === 'user' ? 'ユーザー' : 'AI'}: ${message.content}`)
     .join('\n')
 
   const prompt = `
-## 現在の日付
-今日は${currentYear}年です。「N年後」はこの年を基準に計算してください（例：1年後=${currentYear + 1}年）。
+あなたは家計予算配分の専門AIです。
+以下の条件を元に suggested_budgets を JSON のみで出力してください。
 
-以下の会話から家計設定情報を抽出し、JSONのみを返してください（説明文は不要）。
+## ルール
+- 値はすべて0以上の整数（円）
+- 合計は月収（${monthlyIncome}円）- 貯蓄目標（${monthlySavingsTarget}円）をできるだけ超えない。
+
+## 固定条件
+- housing は ${housingCost !== null ? `${housingCost}円で固定` : '会話文脈から推定'}
+- food は ${monthlyFoodCost !== null ? `${monthlyFoodCost}円で固定` : '会話文脈から推定'}
+
+## 会話文脈（節約の意思など）
+${conversationText}
+
+## 期待する形式
+{
+  "housing": 0,
+  "food": 0,
+  "transport": 0,
+  "entertainment": 0,
+  "clothing": 0,
+  "communication": 0,
+  "medical": 0,
+  "social": 0,
+  "other": 0
+}
+`.trim()
+
+  try {
+    const raw = await generateGeminiText({
+      model: GEMINI_BUDGET_MODEL,
+      prompt,
+    })
+
+    const json = extractFirstJsonObject(raw)
+    if (!json) {
+      console.warn('[chat] budget generation: no JSON object found')
+      return fallbackBudgets
+    }
+
+    const parsed = sanitizeBudgetObject(JSON.parse(json))
+    const merged = {
+      ...createEmptyBudgets(),
+      ...fallbackBudgets,
+      ...parsed,
+    }
+
+    if (housingCost !== null) {
+      merged.housing = housingCost
+    }
+    if (monthlyFoodCost !== null) {
+      merged.food = monthlyFoodCost
+    }
+
+    return fitBudgetsToCapacity(merged, monthlyIncome, monthlySavingsTarget, ['housing', 'food'])
+  } catch (error) {
+    console.warn('[chat] budget generation failed:', error)
+    return fallbackBudgets
+  }
+}
+
+function mergeConfigWithSetupContext(
+  config: ChatExtractedConfig,
+  setupContext: ChatSetupContext | null,
+): ChatWizardConfig {
+  const setupMonthlyIncome = setupContext?.monthly_income
+  const setupCurrentSavings = setupContext?.current_savings
+
+  const monthlyIncome = setupMonthlyIncome !== undefined ? Math.max(0, Math.round(setupMonthlyIncome)) : 0
+
+  const currentSavings = setupCurrentSavings !== undefined
+    ? Math.max(0, Math.round(setupCurrentSavings))
+    : undefined
+
+  return {
+    monthly_income: monthlyIncome,
+    monthly_savings_target: Math.max(0, Math.round(config.monthly_savings_target)),
+    life_goals: config.life_goals,
+    suggested_budgets: {},
+    ...(currentSavings === undefined ? {} : { current_savings: currentSavings }),
+  }
+}
+
+async function extractConfigFromHistory(
+  messages: ChatMessage[],
+) {
+  const currentYear = new Date().getUTCFullYear()
+  const conversationText = messages
+    .map((message) => `${message.role === 'user' ? 'ユーザー' : 'AI'}: ${message.content}`)
+    .join('\n')
+
+  const prompt = `
+以下の会話・文脈から家計設定情報を抽出し、JSONのみを返してください（説明文は不要）。金額の単位は円であることを留意してください。
+
+  ## 現在の日付
+今日は${currentYear}年です。「N年後」はこの年を基準に計算してください（例：1年後=${currentYear + 1}年）。
 
 --- 会話 ---
 ${conversationText}
 --- ここまで ---
 
-以下の形式でJSONを返してください。キーの変更は禁止です：
+## 各項目の内容
+- monthly_savings_target: 月収（手取り）と節約の意思をもとに金額を決定し、記入します。
+- life_goals(title): ライフプランのタイトルを簡潔に記入します。目標が存在しない場合は、文字列"unknown"を記入します。
+- life_goals(target_amount): ライフプランに必要な金額を整数で記入します。不明な場合は、文字列"unknown"を記入します。
+- life_goals(target_year): ライフプランを達成したい年を整数で記入します。ただし、${currentYear+1}以降の年である必要があります。不明な場合は、文字列"unknown"を記入します。
+- life_goals(priority): 客観的に見たライフプランの壮大さによって決定します。「高」「中」「低」または "unknown"を記入します。
+- 出力キーは "monthly_savings_target" と "life_goals" の2つのみを使用してください。
+
+## 出力形式の例
 {
-  "monthly_income": <月収（整数・円）>,
-  "monthly_savings_target": <月々の貯蓄目標額（整数・円）>,
-  "current_savings": <現在の貯蓄額（整数・円）>,
+  "monthly_savings_target": 50000,
   "life_goals": [
     {
-      "title": "<ライフイベント名>",
-      "icon": "<絵文字1文字>",
-      "target_amount": <目標金額（整数・円）>,
-      "monthly_saving": <月々の積立額（整数・円）>,
-      "target_year": <目標年（${currentYear}以降の整数・「N年後」は${currentYear}+Nで計算）>,
+      "title": "マイホーム購入",
+      "target_amount": 5000000,
+      "target_year": 2030,
       "priority": "高"
     }
-  ],
-  "suggested_budgets": {
-    "housing": <家賃・住居費（整数・円）>,
-    "food": <食費（整数・円）>,
-    "transport": <交通費（整数・円）>,
-    "entertainment": <娯楽費（整数・円）>,
-    "clothing": <衣服費（整数・円）>,
-    "communication": <通信費（整数・円）>,
-    "medical": <医療費（整数・円）>,
-    "social": <交際費（整数・円）>,
-    "other": <その他（整数・円）>
-  }
+  ]
 }
 `.trim()
 
   try {
     const rawJson = await generateGeminiText({ prompt })
-    const jsonStr = extractFirstJsonObject(rawJson)
-    if (!jsonStr) {
+    const json = extractFirstJsonObject(rawJson)
+    if (!json) {
       console.warn('[chat] extraction: no JSON object found in response')
       return null
     }
-    return parseConfig(jsonStr)
-  } catch (err) {
-    console.warn('[chat] extraction call failed:', err)
+    return parseExtractedConfig(json)
+  } catch (error) {
+    console.warn('[chat] extraction call failed:', error)
     return null
   }
 }
 
-/**
- * Parses optional <CONFIG> payload and degrades gracefully when model JSON is invalid.
- * Falls back to a dedicated extraction call when the AI indicates completion without a CONFIG tag.
- */
-export async function generateChatResponse(messages: ChatMessage[]): Promise<ChatResponse> {
+async function finalizeConfig(
+  config: ChatExtractedConfig,
+  messages: ChatMessage[],
+  setupContext: ChatSetupContext | null,
+) {
+  const mergedConfig = mergeConfigWithSetupContext(config, setupContext)
+  const suggestedBudgets = await generateSuggestedBudgetsWithLLM(
+    mergedConfig,
+    setupContext,
+    messages,
+  )
+
+  return {
+    ...mergedConfig,
+    suggested_budgets: suggestedBudgets,
+  }
+}
+
+export async function generateChatResponse(
+  messages: ChatMessage[],
+  setupContext: ChatSetupContext | null = null,
+): Promise<ChatResponse> {
+  const normalizedSetupContext = normalizeSetupContext(setupContext)
+
   const rawContent = await generateGeminiChat({
-    systemInstruction: getChatSystemPrompt(),
+    systemInstruction: getChatSystemPrompt(normalizedSetupContext),
     history: messages,
   })
 
-  const { configText, cleanedContent } = extractConfigTag(rawContent)
+  const { hasSetupCompleteTag, cleanedContent } = extractSetupCompleteTag(rawContent)
 
-  // Path 1: AI included <CONFIG> tag — parse and validate directly
-  if (configText) {
-    const config = parseConfig(configText)
-    if (config) {
-      return {
-        role: 'model',
-        content: cleanedContent || '設定内容をまとめました。問題なければ保存してください。',
-        is_complete: true,
-        config,
-      }
-    }
-    // CONFIG tag found but JSON was invalid — fall through to extraction
-    console.warn('[chat] CONFIG tag present but JSON invalid, attempting extraction fallback')
-  }
-
-  // Path 2: No valid CONFIG tag, but AI signals completion — extract via dedicated call.
-  // Append rawContent (AI's completion message) so the extractor has the full organized summary.
-  if (isCompletionResponse(cleanedContent || rawContent)) {
-    console.info('[chat] Completion detected, attempting config extraction from history')
-    const messagesWithCompletion: ChatMessage[] = [
-      ...messages,
-      { role: 'model', content: rawContent },
-    ]
-    const config = await extractConfigFromHistory(messagesWithCompletion)
-    if (config) {
+  if (hasSetupCompleteTag) {
+    console.info('[chat] <SETUP_COMPLETE/> detected, extracting config from history')
+    const messagesWithCompletion: ChatMessage[] = [...messages, { role: 'model', content: rawContent }]
+    const extractedConfig = await extractConfigFromHistory(messagesWithCompletion)
+    if (extractedConfig) {
+      const finalizedConfig = await finalizeConfig(
+        extractedConfig,
+        messagesWithCompletion,
+        normalizedSetupContext,
+      )
       return {
         role: 'model',
         content: cleanedContent || rawContent.trim(),
         is_complete: true,
-        config,
+        config: finalizedConfig,
       }
     }
-    console.warn('[chat] Extraction fallback also failed')
+    console.warn('[chat] <SETUP_COMPLETE/> detected, but config extraction failed')
   }
 
-  // Path 3: Still in conversation
   return {
     role: 'model',
     content: cleanedContent || rawContent.trim(),
