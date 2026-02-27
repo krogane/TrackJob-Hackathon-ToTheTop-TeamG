@@ -17,6 +17,11 @@ export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
   displayName: text('display_name').notNull(),
   monthlyIncome: integer('monthly_income').notNull(),
+  notificationReminder: boolean('notification_reminder').notNull().default(true),
+  notificationWeekly: boolean('notification_weekly').notNull().default(true),
+  notificationMonthly: boolean('notification_monthly').notNull().default(true),
+  notificationLine: boolean('notification_line').notNull().default(true),
+  notificationDiscord: boolean('notification_discord').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

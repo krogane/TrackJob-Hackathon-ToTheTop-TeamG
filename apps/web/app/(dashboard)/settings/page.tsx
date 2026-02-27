@@ -30,7 +30,11 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('')
   const [ageInput, setAgeInput] = useState('')
   const [assumptionsDraft, setAssumptionsDraft] = useState<AssumptionsDraft | null>(null)
-  const [notificationEnabled, setNotificationEnabled] = useState(true)
+  const [reminderEnabled, setReminderEnabled] = useState(true)
+  const [weeklyReportEnabled, setWeeklyReportEnabled] = useState(true)
+  const [monthlyReportEnabled, setMonthlyReportEnabled] = useState(true)
+  const [lineNotifEnabled, setLineNotifEnabled] = useState(true)
+  const [discordNotifEnabled, setDiscordNotifEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
   const [savingProfile, setSavingProfile] = useState(false)
   const [lineLoading, setLineLoading] = useState(false)
@@ -60,6 +64,11 @@ export default function SettingsPage() {
       ])
 
       setDisplayName(profile.display_name)
+      setReminderEnabled(profile.notification_reminder ?? true)
+      setWeeklyReportEnabled(profile.notification_weekly ?? true)
+      setMonthlyReportEnabled(profile.notification_monthly ?? true)
+      setLineNotifEnabled(profile.notification_line ?? true)
+      setDiscordNotifEnabled(profile.notification_discord ?? true)
       setAssumptionsDraft({
         age: assumptions.age,
         annual_income_growth: assumptions.annual_income_growth,
@@ -157,6 +166,21 @@ export default function SettingsPage() {
       .finally(() => setDiscordLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  async function handleNotifToggle(
+    field: 'notification_reminder' | 'notification_weekly' | 'notification_monthly' | 'notification_line' | 'notification_discord',
+    setValue: (v: boolean) => void,
+    currentValue: boolean,
+  ) {
+    const newValue = !currentValue
+    setValue(newValue)
+    try {
+      await authProfileApi.update({ [field]: newValue })
+    } catch (error) {
+      setValue(currentValue)
+      toast({ title: error instanceof Error ? error.message : '通知設定の保存に失敗しました', variant: 'error' })
+    }
+  }
 
   async function handleProfileSave() {
     if (!assumptionsDraft) {
@@ -358,7 +382,23 @@ export default function SettingsPage() {
             <p className="text-sm">{lineStatusText}</p>
             <p className="text-xs text-text2">LINEから支出登録とサマリー確認ができます</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text2">LINE通知</span>
+              <button
+                type="button"
+                className={`relative h-7 w-14 rounded-full transition-colors ${lineNotifEnabled ? 'bg-accent' : 'bg-white/20'}`}
+                onClick={() => void handleNotifToggle('notification_line', setLineNotifEnabled, lineNotifEnabled)}
+                aria-label="LINE通知のON/OFF"
+              >
+                <span
+                  className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform ${
+                    lineNotifEnabled ? 'translate-x-7' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={() => setShowLineHelp(true)}>
               使い方
             </Button>
@@ -371,6 +411,7 @@ export default function SettingsPage() {
                 {lineLoading ? '連携中...' : 'LINEと連携する'}
               </Button>
             )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -384,7 +425,23 @@ export default function SettingsPage() {
             <p className="text-sm">{discordStatusText}</p>
             <p className="text-xs text-text2">DiscordのDMから支出登録とサマリー確認ができます</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text2">Discord通知</span>
+              <button
+                type="button"
+                className={`relative h-7 w-14 rounded-full transition-colors ${discordNotifEnabled ? 'bg-accent' : 'bg-white/20'}`}
+                onClick={() => void handleNotifToggle('notification_discord', setDiscordNotifEnabled, discordNotifEnabled)}
+                aria-label="Discord通知のON/OFF"
+              >
+                <span
+                  className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform ${
+                    discordNotifEnabled ? 'translate-x-7' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={() => setShowDiscordHelp(true)}>
               使い方
             </Button>
@@ -397,6 +454,7 @@ export default function SettingsPage() {
                 {discordLoading ? '連携中...' : 'Discordと連携する'}
               </Button>
             )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -405,20 +463,61 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-accent">通知設定</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-between">
-          <p className="text-sm">月次サマリー通知</p>
-          <button
-            type="button"
-            className={`relative h-7 w-14 rounded-full transition-colors ${notificationEnabled ? 'bg-accent' : 'bg-white/20'}`}
-            onClick={() => setNotificationEnabled((prev) => !prev)}
-            aria-label="月次サマリー通知のON/OFF"
-          >
-            <span
-              className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform ${
-                notificationEnabled ? 'translate-x-7' : 'translate-x-0'
-              }`}
-            />
-          </button>
+        <CardContent className="divide-y divide-border">
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm">支出リマインド</p>
+              <p className="text-xs text-text2">21時までに支出の登録がない日に通知します</p>
+            </div>
+              <button
+                type="button"
+                className={`relative h-7 w-14 rounded-full transition-colors ${reminderEnabled ? 'bg-accent' : 'bg-white/20'}`}
+                onClick={() => void handleNotifToggle('notification_reminder', setReminderEnabled, reminderEnabled)}
+                aria-label="支出リマインドのON/OFF"
+              >
+                <span
+                  className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform ${
+                    reminderEnabled ? 'translate-x-7' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm">週次レポート</p>
+              <p className="text-xs text-text2">毎週月曜日に先週の支出レポートを送信します</p>
+            </div>
+            <button
+              type="button"
+              className={`relative h-7 w-14 rounded-full transition-colors ${weeklyReportEnabled ? 'bg-accent' : 'bg-white/20'}`}
+              onClick={() => void handleNotifToggle('notification_weekly', setWeeklyReportEnabled, weeklyReportEnabled)}
+              aria-label="週次レポートのON/OFF"
+            >
+              <span
+                className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform ${
+                  weeklyReportEnabled ? 'translate-x-7' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <p className="text-sm">月次レポート</p>
+              <p className="text-xs text-text2">毎月1日に先月の家計サマリーを送信します</p>
+            </div>
+            <button
+              type="button"
+              className={`relative h-7 w-14 rounded-full transition-colors ${monthlyReportEnabled ? 'bg-accent' : 'bg-white/20'}`}
+              onClick={() => void handleNotifToggle('notification_monthly', setMonthlyReportEnabled, monthlyReportEnabled)}
+              aria-label="月次レポートのON/OFF"
+            >
+              <span
+                className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-card shadow-sm transition-transform ${
+                  monthlyReportEnabled ? 'translate-x-7' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
         </CardContent>
       </Card>
 

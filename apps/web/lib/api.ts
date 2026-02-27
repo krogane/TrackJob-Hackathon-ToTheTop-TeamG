@@ -175,7 +175,7 @@ export const authProfileApi = {
       body: JSON.stringify(body),
     }),
   get: () => apiRequest<UserProfile>('/api/auth/profile'),
-  update: (body: Partial<Pick<UserProfile, 'display_name' | 'monthly_income'>>) =>
+  update: (body: Partial<Pick<UserProfile, 'display_name' | 'monthly_income' | 'notification_reminder' | 'notification_weekly' | 'notification_monthly' | 'notification_line' | 'notification_discord'>>) =>
     apiRequest<UserProfile>('/api/auth/profile', {
       method: 'PATCH',
       body: JSON.stringify(body),

@@ -24,7 +24,15 @@ export async function getUserById(userId: string) {
 
 export function updateUser(
   userId: string,
-  data: Partial<{ displayName: string; monthlyIncome: number }>,
+  data: Partial<{
+    displayName: string
+    monthlyIncome: number
+    notificationReminder: boolean
+    notificationWeekly: boolean
+    notificationMonthly: boolean
+    notificationLine: boolean
+    notificationDiscord: boolean
+  }>,
 ) {
   return db
     .update(users)

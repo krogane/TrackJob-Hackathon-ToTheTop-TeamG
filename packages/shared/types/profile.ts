@@ -2,6 +2,11 @@ export interface UserProfile {
   id: string
   display_name: string
   monthly_income: number
+  notification_reminder: boolean
+  notification_weekly: boolean
+  notification_monthly: boolean
+  notification_line: boolean
+  notification_discord: boolean
   created_at: string
   updated_at?: string
 }

@@ -6,6 +6,11 @@ type ProfileRow = {
   id: string
   displayName: string
   monthlyIncome: number
+  notificationReminder: boolean
+  notificationWeekly: boolean
+  notificationMonthly: boolean
+  notificationLine: boolean
+  notificationDiscord: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -15,6 +20,11 @@ function mapProfileForGet(row: ProfileRow) {
     id: row.id,
     display_name: row.displayName,
     monthly_income: row.monthlyIncome,
+    notification_reminder: row.notificationReminder,
+    notification_weekly: row.notificationWeekly,
+    notification_monthly: row.notificationMonthly,
+    notification_line: row.notificationLine,
+    notification_discord: row.notificationDiscord,
     created_at: toIsoString(row.createdAt),
     updated_at: toIsoString(row.updatedAt),
   }
@@ -25,6 +35,11 @@ function mapProfileForCreate(row: ProfileRow) {
     id: row.id,
     display_name: row.displayName,
     monthly_income: row.monthlyIncome,
+    notification_reminder: row.notificationReminder,
+    notification_weekly: row.notificationWeekly,
+    notification_monthly: row.notificationMonthly,
+    notification_line: row.notificationLine,
+    notification_discord: row.notificationDiscord,
     created_at: toIsoString(row.createdAt),
   }
 }
@@ -34,6 +49,11 @@ function mapProfileForPatch(row: ProfileRow) {
     id: row.id,
     display_name: row.displayName,
     monthly_income: row.monthlyIncome,
+    notification_reminder: row.notificationReminder,
+    notification_weekly: row.notificationWeekly,
+    notification_monthly: row.notificationMonthly,
+    notification_line: row.notificationLine,
+    notification_discord: row.notificationDiscord,
     updated_at: toIsoString(row.updatedAt),
   }
 }
@@ -71,7 +91,15 @@ export async function getProfile(userId: string) {
 
 export async function patchProfile(
   userId: string,
-  data: Partial<{ display_name: string; monthly_income: number }>,
+  data: Partial<{
+    display_name: string
+    monthly_income: number
+    notification_reminder: boolean
+    notification_weekly: boolean
+    notification_monthly: boolean
+    notification_line: boolean
+    notification_discord: boolean
+  }>,
 ) {
   const existing = await getUserById(userId)
   if (!existing) {
@@ -81,6 +109,11 @@ export async function patchProfile(
   const [updated] = await updateUser(userId, {
     displayName: data.display_name,
     monthlyIncome: data.monthly_income,
+    notificationReminder: data.notification_reminder,
+    notificationWeekly: data.notification_weekly,
+    notificationMonthly: data.notification_monthly,
+    notificationLine: data.notification_line,
+    notificationDiscord: data.notification_discord,
   })
 
   if (!updated) {

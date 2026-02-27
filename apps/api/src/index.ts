@@ -21,7 +21,7 @@ import ocrRoute from './routes/ocr'
 import chatRoute from './routes/chat'
 import lineWebhookRoute from './routes/webhooks/line'
 import { startDiscordGateway } from './services/discord'
-import { sendDailyReminder, sendWeeklySummary } from './services/notifications'
+import { sendDailyReminder, sendMonthlySummary, sendWeeklySummary } from './services/notifications'
 import { startScheduler } from './lib/scheduler'
 
 const app = new Hono<AppBindings>()
@@ -80,6 +80,7 @@ startDiscordGateway().catch(console.error)
 startScheduler({
   onDailyReminder: sendDailyReminder,
   onWeeklySummary: sendWeeklySummary,
+  onMonthlySummary: sendMonthlySummary,
 })
 
 export default {
