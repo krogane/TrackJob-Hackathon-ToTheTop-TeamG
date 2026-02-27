@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 
 import { db } from '../client'
-import { externalConnections } from '../schema'
+import { externalConnections, users } from '../schema'
 
 export function listConnections(userId: string) {
   return db.select().from(externalConnections).where(eq(externalConnections.userId, userId))
@@ -56,6 +56,27 @@ export function listAllActiveConnections(platform: 'line' | 'discord') {
   return db
     .select()
     .from(externalConnections)
+    .where(
+      and(
+        eq(externalConnections.platform, platform),
+        eq(externalConnections.isActive, true),
+      ),
+    )
+}
+
+export function listActiveConnectionsWithNotifSettings(platform: 'line' | 'discord') {
+  return db
+    .select({
+      userId: externalConnections.userId,
+      platformUserId: externalConnections.platformUserId,
+      notificationReminder: users.notificationReminder,
+      notificationWeekly: users.notificationWeekly,
+      notificationMonthly: users.notificationMonthly,
+      notificationLine: users.notificationLine,
+      notificationDiscord: users.notificationDiscord,
+    })
+    .from(externalConnections)
+    .innerJoin(users, eq(externalConnections.userId, users.id))
     .where(
       and(
         eq(externalConnections.platform, platform),

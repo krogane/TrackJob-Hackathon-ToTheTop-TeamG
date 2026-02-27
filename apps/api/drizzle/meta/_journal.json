@@ -8,6 +8,13 @@
       "when": 1771758697776,
       "tag": "0000_empty_wolf_cub",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771758697777,
+      "tag": "0001_notification_settings",
+      "breakpoints": true
     }
   ]
 }

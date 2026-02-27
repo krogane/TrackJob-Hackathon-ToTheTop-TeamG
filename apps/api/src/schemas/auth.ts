@@ -11,6 +11,11 @@ export const updateProfileBodySchema = z
   .object({
     display_name: z.string().min(1).max(50).optional(),
     monthly_income: z.number().int().min(0).optional(),
+    notification_reminder: z.boolean().optional(),
+    notification_weekly: z.boolean().optional(),
+    notification_monthly: z.boolean().optional(),
+    notification_line: z.boolean().optional(),
+    notification_discord: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, 'at least one field is required')
 

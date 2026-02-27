@@ -123,8 +123,8 @@ export async function formatCategoryMonthlyUsage(userId: string, category: strin
 // 月次サマリーテキスト生成
 // ─────────────────────────────────────────────
 
-export async function buildSummaryMessageText(userId: string): Promise<string> {
-  const yearMonth = getCurrentYearMonth()
+export async function buildSummaryMessageText(userId: string, targetYearMonth?: string): Promise<string> {
+  const yearMonth = targetYearMonth ?? getCurrentYearMonth()
   const [summary, budgets] = await Promise.all([
     getTransactionSummary(userId, yearMonth),
     listBudgetsByMonth(userId, yearMonth),

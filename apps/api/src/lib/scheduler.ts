@@ -15,6 +15,18 @@ function msUntilNextDailyUTC(hour: number, minute: number): number {
   return next.getTime() - now.getTime()
 }
 
+/** 次回の「毎月 day 日の hour:minute UTC」までのミリ秒を返す */
+function msUntilNextMonthlyUTC(day: number, hour: number, minute: number): number {
+  const now = new Date()
+  const next = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day, hour, minute, 0, 0),
+  )
+  if (next.getTime() <= now.getTime()) {
+    next.setUTCMonth(next.getUTCMonth() + 1)
+  }
+  return next.getTime() - now.getTime()
+}
+
 /** 次回の「毎週 dayOfWeek の hour:minute UTC」までのミリ秒を返す (0=日曜) */
 function msUntilNextWeeklyUTC(dayOfWeek: number, hour: number, minute: number): number {
   const now = new Date()
@@ -56,6 +68,7 @@ function scheduleRepeat(name: string, getDelay: () => number, fn: () => Promise<
 export function startScheduler(handlers: {
   onDailyReminder: () => Promise<void>
   onWeeklySummary: () => Promise<void>
+  onMonthlySummary: () => Promise<void>
 }) {
   // 21:00 JST = 12:00 UTC
   scheduleRepeat(
@@ -69,5 +82,12 @@ export function startScheduler(handlers: {
     '週次サマリー（日曜 20:00 JST）',
     () => msUntilNextWeeklyUTC(0, 11, 0),
     handlers.onWeeklySummary,
+  )
+
+  // 毎月1日 9:00 JST = 毎月1日 0:00 UTC
+  scheduleRepeat(
+    '月次サマリー（毎月1日 9:00 JST）',
+    () => msUntilNextMonthlyUTC(1, 0, 0),
+    handlers.onMonthlySummary,
   )
 }
