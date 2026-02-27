@@ -1,14 +1,15 @@
 import {
   createTransaction,
   deleteTransactionById,
-  getDailyTrend,
+  getDailyVariableTrend,
+  getMonthlyFixedExpenseTotals,
   getMonthlyTrend,
   getRecordingStreak,
   getSpentAmountsByCategory,
   getTransactionById,
   getTransactionSummary,
   getTotalSpent,
-  getWeeklyTrend,
+  getWeeklyVariableTrend,
   listTransactions,
   updateTransactionById,
 } from '../db/repositories/transactions'
@@ -249,32 +250,98 @@ export async function getTransactionTrend(userId: string, range: '1m' | '3m' | '
     }))
   }
 
-  const since = new Date(now)
   if (range === '1m') {
-    since.setUTCDate(since.getUTCDate() - 28)
+    // 直近28日（今日-27日〜今日）
+    const since = new Date(now)
+    since.setUTCDate(since.getUTCDate() - 27)
     const sinceDate = since.toISOString().slice(0, 10)
-    const rows = await getDailyTrend(userId, sinceDate)
-    return rows.map((row) => {
-      const [, m, d] = row.day.split('-')
+
+    const [variableRows, fixedTotals] = await Promise.all([
+      getDailyVariableTrend(userId, sinceDate),
+      getMonthlyFixedExpenseTotals(userId, sinceDate),
+    ])
+
+    const variableMap = new Map(variableRows.map((r) => [r.day, r]))
+    const fixedMap = new Map(fixedTotals.map((r) => [r.yearMonth, Number(r.fixedTotal)]))
+
+    // 全28日を生成して各日に日割り固定費を加算
+    return Array.from({ length: 28 }, (_, i) => {
+      const d = new Date(now)
+      d.setUTCDate(d.getUTCDate() - (27 - i))
+      const dayStr = d.toISOString().slice(0, 10)
+      const [yearStr, monthStr, dayPart] = dayStr.split('-')
+      const yearMonth = `${yearStr}-${monthStr}`
+      const daysInMonth = new Date(Date.UTC(Number(yearStr), Number(monthStr), 0)).getDate()
+
+      const fixedTotal = fixedMap.get(yearMonth) ?? 0
+      const proRatedFixed = fixedTotal / daysInMonth
+
+      const row = variableMap.get(dayStr)
+      const variableExpense = Number(row?.expense ?? 0)
+      const income = Number(row?.income ?? 0)
+      const totalExpense = variableExpense + proRatedFixed
+
       return {
-        label: `${Number(m)}/${Number(d)}`,
-        expense: row.expense,
-        saving: row.income - row.expense,
+        label: `${Number(monthStr)}/${Number(dayPart)}`,
+        expense: Math.round(totalExpense),
+        saving: Math.round(income - totalExpense),
       }
     })
   }
 
+  // range === '3m': 直近91日を週別に集計
+  const since = new Date(now)
   since.setUTCDate(since.getUTCDate() - 91)
   const sinceDate = since.toISOString().slice(0, 10)
-  const rows = await getWeeklyTrend(userId, sinceDate)
-  return rows.map((row) => {
-    const [, m, d] = row.weekStart.split('-')
+
+  const [variableRows, fixedTotals] = await Promise.all([
+    getWeeklyVariableTrend(userId, sinceDate),
+    getMonthlyFixedExpenseTotals(userId, sinceDate),
+  ])
+
+  const variableMap = new Map(variableRows.map((r) => [r.weekStart, r]))
+  const fixedMap = new Map(fixedTotals.map((r) => [r.yearMonth, Number(r.fixedTotal)]))
+
+  // since を含む週の月曜日から今日の週まで全週を生成
+  const weekStarts = generateWeekStarts(since, now)
+
+  return weekStarts.map((weekStart) => {
+    const [yearStr, monthStr, dayPart] = weekStart.split('-')
+    const daysInMonth = new Date(Date.UTC(Number(yearStr), Number(monthStr), 0)).getDate()
+    const yearMonth = `${yearStr}-${monthStr}`
+
+    const fixedTotal = fixedMap.get(yearMonth) ?? 0
+    // 週の開始月を基準に、月の固定費を日割り×7日分で週割り換算
+    const proRatedFixed = (fixedTotal * 7) / daysInMonth
+
+    const row = variableMap.get(weekStart)
+    const variableExpense = Number(row?.expense ?? 0)
+    const income = Number(row?.income ?? 0)
+    const totalExpense = variableExpense + proRatedFixed
+
     return {
-      label: `${Number(m)}/${Number(d)}`,
-      expense: row.expense,
-      saving: row.income - row.expense,
+      label: `${Number(monthStr)}/${Number(dayPart)}`,
+      expense: Math.round(totalExpense),
+      saving: Math.round(income - totalExpense),
     }
   })
+}
+
+/** since を含む ISO 週（月曜始まり）の先頭月曜日から until の週まで全週の月曜日を返す */
+function generateWeekStarts(since: Date, until: Date): string[] {
+  // since が属する週の月曜を求める（ISO週: 月曜=1, 日曜=0→7）
+  const startMonday = new Date(since)
+  const day = startMonday.getUTCDay()
+  const daysToMonday = day === 0 ? 6 : day - 1
+  startMonday.setUTCDate(startMonday.getUTCDate() - daysToMonday)
+
+  const weeks: string[] = []
+  const current = new Date(startMonday)
+  while (current <= until) {
+    weeks.push(current.toISOString().slice(0, 10))
+    current.setUTCDate(current.getUTCDate() + 7)
+  }
+  return weeks
 }
 
 export async function getBudgetSpentSummary(userId: string, yearMonth: string) {

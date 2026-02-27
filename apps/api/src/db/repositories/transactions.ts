@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm'
 
 import { db } from '../client'
-import { transactions } from '../schema'
+import { budgets, transactions } from '../schema'
 
 const SORT_COLUMN_MAP = {
   transacted_at: transactions.transactedAt,
@@ -329,6 +329,78 @@ export async function getMonthlyTrend(userId: string, since: string) {
     })
     .from(transactions)
     .where(and(eq(transactions.userId, userId), gte(transactions.transactedAt, since)))
+    .groupBy(sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM')`)
+    .orderBy(asc(sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM')`))
+}
+
+/** 変動費のみ（is_fixed=falseまたは予算未設定のカテゴリ）を日別集計 */
+export async function getDailyVariableTrend(userId: string, since: string) {
+  return db
+    .select({
+      day: sql<string>`to_char(${transactions.transactedAt}::date, 'YYYY-MM-DD')`,
+      expense: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND (${budgets.isFixed} IS NULL OR ${budgets.isFixed} = false) THEN ${transactions.amount} ELSE 0 END), 0)`,
+      income: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' THEN ${transactions.amount} ELSE 0 END), 0)`,
+    })
+    .from(transactions)
+    .leftJoin(
+      budgets,
+      and(
+        eq(budgets.userId, transactions.userId),
+        eq(budgets.yearMonth, sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM')`),
+        eq(budgets.category, transactions.category),
+      ),
+    )
+    .where(and(eq(transactions.userId, userId), gte(transactions.transactedAt, since)))
+    .groupBy(sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM-DD')`)
+    .orderBy(asc(sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM-DD')`))
+}
+
+/** 変動費のみを週別集計 */
+export async function getWeeklyVariableTrend(userId: string, since: string) {
+  return db
+    .select({
+      weekStart: sql<string>`to_char(date_trunc('week', ${transactions.transactedAt}::date), 'YYYY-MM-DD')`,
+      expense: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'expense' AND (${budgets.isFixed} IS NULL OR ${budgets.isFixed} = false) THEN ${transactions.amount} ELSE 0 END), 0)`,
+      income: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.type} = 'income' THEN ${transactions.amount} ELSE 0 END), 0)`,
+    })
+    .from(transactions)
+    .leftJoin(
+      budgets,
+      and(
+        eq(budgets.userId, transactions.userId),
+        eq(budgets.yearMonth, sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM')`),
+        eq(budgets.category, transactions.category),
+      ),
+    )
+    .where(and(eq(transactions.userId, userId), gte(transactions.transactedAt, since)))
+    .groupBy(sql`date_trunc('week', ${transactions.transactedAt}::date)`)
+    .orderBy(asc(sql`date_trunc('week', ${transactions.transactedAt}::date)`))
+}
+
+/** 固定費（is_fixed=true）の月別合計 */
+export async function getMonthlyFixedExpenseTotals(userId: string, since: string) {
+  return db
+    .select({
+      yearMonth: sql<string>`to_char(${transactions.transactedAt}::date, 'YYYY-MM')`,
+      fixedTotal: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
+    })
+    .from(transactions)
+    .innerJoin(
+      budgets,
+      and(
+        eq(budgets.userId, transactions.userId),
+        eq(budgets.yearMonth, sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM')`),
+        eq(budgets.category, transactions.category),
+        eq(budgets.isFixed, true),
+      ),
+    )
+    .where(
+      and(
+        eq(transactions.userId, userId),
+        eq(transactions.type, 'expense'),
+        gte(transactions.transactedAt, since),
+      ),
+    )
     .groupBy(sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM')`)
     .orderBy(asc(sql`to_char(${transactions.transactedAt}::date, 'YYYY-MM')`))
 }
