@@ -62,6 +62,7 @@ type AdviceDetailModalContent = {
   generationError: string | null
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const IMPROVEMENT_DETAIL_FALLBACK_ITEMS = [
   '直近14日間の同カテゴリ支出を確認し、固定費・変動費に分けて改善対象を明確化する',
   '金額インパクトが大きい項目から優先順位を付け、今月中に1件見直す',
