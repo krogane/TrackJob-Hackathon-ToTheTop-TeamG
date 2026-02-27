@@ -106,17 +106,6 @@ const SETUP_QUESTIONS: SetupQuestion[] = [
   },
 ]
 
-const AMOUNT_FIELDS: SetupField[] = [
-  'monthly_income',
-  'housing_cost',
-  'daily_food_cost',
-  'current_savings',
-]
-
-function isAmountField(key: SetupField) {
-  return AMOUNT_FIELDS.includes(key)
-}
-
 function formatDigitsWithCommas(value: string) {
   const digits = value.replace(/\D/g, '')
   if (!digits) return ''
