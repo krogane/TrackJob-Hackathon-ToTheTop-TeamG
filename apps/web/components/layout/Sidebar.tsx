@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 
@@ -53,8 +54,8 @@ export function Sidebar({ mobileOpen = false, onNavigate }: SidebarProps) {
       )}
     >
       <Link href="/dashboard" onClick={onNavigate} className="mb-8 flex items-center gap-2 px-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent2 font-display text-sm font-extrabold text-white">
-          K
+        <div className="relative h-8 w-8 overflow-hidden rounded-full">
+          <Image src="/app-icon.png" alt="アプリアイコン" fill className="object-cover" />
         </div>
         <div className="font-body text-[30px] font-semibold leading-none tracking-tight text-text">
           Kake<span className="text-accent">AI</span>

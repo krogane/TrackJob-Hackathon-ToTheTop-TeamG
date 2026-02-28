@@ -25,7 +25,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return
       }
 
-      // 初回設定未完了（display_name が空）なら /setup へ
+      // セッション確認完了 → 先に子コンポーネントを描画（OAuthコールバック等をブロックしないため）
+      setCheckingSession(false)
+
+      // 初回設定未完了（display_name が空）なら /setup へ（バックグラウンドで確認）
       try {
         const profile = await authProfileApi.get()
         if (!mounted) return
@@ -41,8 +44,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
         // ネットワークエラー等はダッシュボードをそのまま表示
       }
-
-      setCheckingSession(false)
     })
 
     const {

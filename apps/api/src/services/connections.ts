@@ -56,6 +56,9 @@ export async function connectDiscord(userId: string, code: string, redirectUri: 
   if (!tokenResponse.ok) {
     const errorText = await tokenResponse.text().catch(() => '')
     console.error('[discord-oauth] token exchange failed:', errorText)
+    if (tokenResponse.status === 429 || errorText.includes('rate limit')) {
+      throw new AppError('VALIDATION_ERROR', 'Discordのサーバーが混雑しています。数分待ってから再度お試しください。')
+    }
     throw new AppError('VALIDATION_ERROR', 'Discordの認証コードが無効です。再度連携してください。')
   }
 
