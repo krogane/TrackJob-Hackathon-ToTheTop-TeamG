@@ -12,7 +12,7 @@ interface BudgetInitFormProps {
   yearMonth: string
   onSave: (payload: {
     year_month: string
-    budgets: Array<{ category: string; limit_amount: number; is_fixed: boolean }>
+    budgets: Array<{ category: ExpenseCategory; limit_amount: number; is_fixed: boolean }>
   }) => Promise<unknown>
   isSaving?: boolean
 }
