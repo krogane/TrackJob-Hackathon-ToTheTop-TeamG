@@ -1,8 +1,9 @@
 'use client'
 
 import { BudgetEditForm } from '@/components/forms/BudgetEditForm'
+import { BudgetInitForm } from '@/components/forms/BudgetInitForm'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useBudgets, usePatchBudget } from '@/hooks/useBudgets'
+import { useBudgets, usePatchBudget, useUpdateBudgets } from '@/hooks/useBudgets'
 import { formatCurrency, getCurrentYearMonth } from '@/lib/utils'
 
 export default function BudgetPage() {
@@ -10,6 +11,7 @@ export default function BudgetPage() {
 
   const { budgetSummary, budgets, isLoading: budgetsLoading, error: budgetsError } = useBudgets(yearMonth)
   const patchBudget = usePatchBudget(yearMonth)
+  const updateBudgets = useUpdateBudgets()
 
   return (
     <div className="space-y-5 pb-20 md:pb-28">
@@ -37,7 +39,15 @@ export default function BudgetPage() {
         {budgetsLoading ? <p className="text-sm text-text2">予算データを読み込み中...</p> : null}
         {budgetsError ? <p className="text-sm text-danger">予算データの取得に失敗しました。</p> : null}
 
-        {!budgetsLoading && !budgetsError ? (
+        {!budgetsLoading && !budgetsError && budgets.length === 0 ? (
+          <BudgetInitForm
+            yearMonth={yearMonth}
+            onSave={(payload) => updateBudgets.mutateAsync(payload)}
+            isSaving={updateBudgets.isPending}
+          />
+        ) : null}
+
+        {!budgetsLoading && !budgetsError && budgets.length > 0 ? (
           <BudgetEditForm
             items={budgets}
             onSaveItem={(payload) => patchBudget.mutateAsync(payload)}
