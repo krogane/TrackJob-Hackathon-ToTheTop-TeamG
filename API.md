@@ -1,4 +1,4 @@
-# API.md — LifeBalance API仕様書
+# API.md — KakeAI API仕様書
 
 > ベースURL: `http://localhost:8787`
 > すべてのリクエスト・レスポンスは `Content-Type: application/json`
