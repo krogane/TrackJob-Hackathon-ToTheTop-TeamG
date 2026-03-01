@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import type { ChatSetupContext } from '@lifebalance/shared/types'
 
 import { Button } from '@/components/ui/button'
+import { ChatRichText } from '@/components/ui/chat-rich-text'
 import { Input } from '@/components/ui/input'
 import { useChatWizard } from '@/hooks/useChatWizard'
 import { useToast } from '@/hooks/useToast'
@@ -493,7 +494,7 @@ function SetupPageInner() {
               <div className="flex items-start gap-2">
                 <AiAvatar />
                 <div className="max-w-[85%] rounded-lg rounded-tl-none border border-accent/20 bg-accent/10 px-3 py-2 text-sm text-text whitespace-pre-wrap">
-                  {initialModelMessage.content}
+                  <ChatRichText content={initialModelMessage.content} />
                 </div>
               </div>
             ) : null}
@@ -503,7 +504,7 @@ function SetupPageInner() {
                 <div key={`${message.role}-${index}`} className="flex items-start gap-2">
                   <AiAvatar />
                   <div className="max-w-[85%] rounded-lg rounded-tl-none border border-accent/20 bg-accent/10 px-3 py-2 text-sm text-text whitespace-pre-wrap">
-                    {message.content}
+                    <ChatRichText content={message.content} />
                   </div>
                 </div>
               ) : (

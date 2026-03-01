@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ScoreHistoryChart } from '@/components/charts/ScoreHistoryChart'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChatRichText } from '@/components/ui/chat-rich-text'
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useAdvice } from '@/hooks/useAdvice'
@@ -434,8 +435,8 @@ function QuestionPanel() {
               msg.role === 'ai' ? (
                 <div key={index} className="flex items-start gap-2">
                   <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent/20 text-sm">🤖</div>
-                  <p className="max-w-[85%] rounded-lg rounded-tl-none border border-accent/20 bg-accent/10 px-3 py-2 text-sm text-text">
-                    {msg.content}
+                  <p className="max-w-[85%] rounded-lg rounded-tl-none border border-accent/20 bg-accent/10 px-3 py-2 text-sm text-text whitespace-pre-wrap">
+                    <ChatRichText content={msg.content} />
                   </p>
                 </div>
               ) : (
